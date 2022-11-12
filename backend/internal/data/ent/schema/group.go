@@ -26,8 +26,8 @@ func (Group) Fields() []ent.Field {
 			MaxLen(255).
 			NotEmpty(),
 		field.Enum("currency").
-			Default("usd").
-			Values("usd", "eur", "gbp", "jpy", "zar", "aud", "nok", "sek", "dkk"),
+			Default("chf").
+			Values("chf", "usd", "eur", "gbp", "jpy", "zar", "aud", "nok", "sek", "dkk"),
 	}
 }
 

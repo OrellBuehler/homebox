@@ -1,4 +1,4 @@
-export type Codes = "USD" | "EUR" | "GBP" | "JPY" | "ZAR" | "AUD" | "NOK" | "SEK" | "DKK";
+export type Codes = "CHF" | "USD" | "EUR" | "GBP" | "JPY" | "ZAR" | "AUD" | "NOK" | "SEK" | "DKK";
 
 export type Currency = {
   code: Codes;
@@ -8,6 +8,12 @@ export type Currency = {
 };
 
 export const currencies: Currency[] = [
+  {
+    code: "CHF",
+    local: "de-CH",
+    symbol: "CHF",
+    name: "Swiss Franc",
+  },
   {
     code: "USD",
     local: "en-US",

@@ -22,15 +22,15 @@ jobs:
     - name: Log in to registry
       uses: docker/login-action@v1
       with:
-        registry: https://mcr.microsoft.com/
-        username: ${{ secrets.AzureAppService_ContainerUsername_e779a65154e14dea9a0d8bd662fddd42 }}
-        password: ${{ secrets.AzureAppService_ContainerPassword_4c19c37119ca4ac283acc318a2c49786 }}
+        registry: https://ghcr.io/
+        username: ${{ secrets.AzureAppService_ContainerUsername_f0f67c79785e43c9aea322b84ee6de5b }}
+        password: ${{ secrets.AzureAppService_ContainerPassword_e8eea0b7270e46d38c82ab4673d22d21 }}
 
     - name: Build and push container image to registry
       uses: docker/build-push-action@v2
       with:
         push: true
-        tags: mcr.microsoft.com/${{ secrets.AzureAppService_ContainerUsername_e779a65154e14dea9a0d8bd662fddd42 }}/homebox:${{ github.sha }}
+        tags: ghcr.io/${{ secrets.AzureAppService_ContainerUsername_f0f67c79785e43c9aea322b84ee6de5b }}/homebox:${{ github.sha }}
         file: ./Dockerfile
 
   deploy:
@@ -47,5 +47,5 @@ jobs:
       with:
         app-name: 'thechosenlan-homebox'
         slot-name: 'production'
-        publish-profile: ${{ secrets.AzureAppService_PublishProfile_53f6c1694bbc4e48b96b4f85fa2030d3 }}
-        images: 'mcr.microsoft.com/${{ secrets.AzureAppService_ContainerUsername_e779a65154e14dea9a0d8bd662fddd42 }}/homebox:${{ github.sha }}'
+        publish-profile: ${{ secrets.AzureAppService_PublishProfile_0aadaf1bec68425fa9918d56acf2b6ec }}
+        images: 'ghcr.io/${{ secrets.AzureAppService_ContainerUsername_f0f67c79785e43c9aea322b84ee6de5b }}/homebox:${{ github.sha }}'

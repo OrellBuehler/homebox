@@ -16,24 +16,3 @@ jobs:
   frontend-tests:
     name: "Frontend and End-to-End Tests"
     uses: OrellBuehler/homebox/.github/workflows/partial-frontend.yaml@main
-
-  publish-nightly:
-    name: "Publish Nightly"
-    if: github.event_name != 'release'
-    needs:
-      - backend-tests
-      - frontend-tests
-    uses: OrellBuehler/homebox/.github/workflows/partial-publish.yaml@main
-    with:
-      tag: nightly
-
-  publish-tag:
-    name: "Publish Tag"
-    if: github.event_name == 'release'
-    needs:
-      - backend-tests
-      - frontend-tests
-    uses: OrellBuehler/homebox/.github/workflows/partial-publish.yaml@main
-    with:
-      release: true
-      tag: ${{ github.event.release.tag_name }}

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import { CustomDetail, Detail, Details } from "~~/components/global/DetailsSection/types";
+  import { AnyDetail, Detail, Details } from "~~/components/global/DetailsSection/types";
   import { ItemAttachment } from "~~/lib/api/types/data-contracts";
 
   definePageMeta({
@@ -12,6 +12,10 @@
 
   const itemId = computed<string>(() => route.params.id as string);
   const preferences = useViewPreferences();
+
+  const hasNested = computed<boolean>(() => {
+    return route.fullPath.split("/").at(-1) !== itemId.value;
+  });
 
   const { data: item, refresh } = useAsyncData(itemId.value, async () => {
     const { data, error } = await api.items.get(itemId.value);
@@ -27,17 +31,32 @@
   });
 
   type FilteredAttachments = {
-    photos: ItemAttachment[];
     attachments: ItemAttachment[];
     warranty: ItemAttachment[];
     manuals: ItemAttachment[];
     receipts: ItemAttachment[];
   };
 
+  type Photo = {
+    src: string;
+  };
+
+  const photos = computed<Photo[]>(() => {
+    return (
+      item.value?.attachments.reduce((acc, cur) => {
+        if (cur.type === "photo") {
+          acc.push({
+            src: api.authURL(`/items/${item.value.id}/attachments/${cur.id}`),
+          });
+        }
+        return acc;
+      }, [] as Photo[]) || []
+    );
+  });
+
   const attachments = computed<FilteredAttachments>(() => {
     if (!item.value) {
       return {
-        photos: [],
         attachments: [],
         manuals: [],
         warranty: [],
@@ -48,8 +67,9 @@
     return item.value.attachments.reduce(
       (acc, attachment) => {
         if (attachment.type === "photo") {
-          acc.photos.push(attachment);
-        } else if (attachment.type === "warranty") {
+          return acc;
+        }
+        if (attachment.type === "warranty") {
           acc.warranty.push(attachment);
         } else if (attachment.type === "manual") {
           acc.manuals.push(attachment);
@@ -61,7 +81,6 @@
         return acc;
       },
       {
-        photos: [] as ItemAttachment[],
         attachments: [] as ItemAttachment[],
         warranty: [] as ItemAttachment[],
         manuals: [] as ItemAttachment[],
@@ -70,10 +89,24 @@
     );
   });
 
+  const assetID = computed<Details>(() => {
+    if (item.value?.assetId === "000-000") {
+      return [];
+    }
+
+    return [
+      {
+        name: "Asset ID",
+        text: item.value?.assetId,
+      },
+    ];
+  });
+
   const itemDetails = computed<Details>(() => {
     return [
       {
         name: "Description",
+        type: "markdown",
         text: item.value?.description,
       },
       {
@@ -98,8 +131,10 @@
       },
       {
         name: "Notes",
+        type: "markdown",
         text: item.value?.notes,
       },
+      ...assetID.value,
       ...item.value.fields.map(field => {
         /**
          * Support Special URL Syntax
@@ -111,7 +146,7 @@
             name: field.name,
             text: url.text,
             href: url.url,
-          } as CustomDetail;
+          } as AnyDetail;
         }
 
         return {
@@ -128,7 +163,6 @@
     }
 
     return (
-      attachments.value.photos.length > 0 ||
       attachments.value.attachments.length > 0 ||
       attachments.value.warranty.length > 0 ||
       attachments.value.manuals.length > 0 ||
@@ -146,10 +180,6 @@
         slot: name.toLowerCase(),
       });
     };
-
-    if (attachments.value.photos.length > 0) {
-      push("Photos");
-    }
 
     if (attachments.value.attachments.length > 0) {
       push("Attachments");
@@ -193,13 +223,14 @@
     } else {
       details.push({
         name: "Warranty Expires",
-        text: item.value?.warrantyExpires,
+        text: item.value?.warrantyExpires || "",
         type: "date",
       });
     }
 
     details.push({
       name: "Warranty Details",
+      type: "markdown",
       text: item.value?.warrantyDetails || "",
     });
 
@@ -226,7 +257,7 @@
       },
       {
         name: "Purchase Date",
-        text: item.value.purchaseTime,
+        text: item.value?.purchaseTime || "",
         type: "date",
       },
     ];
@@ -275,15 +306,45 @@
     toast.success("Item deleted");
     navigateTo("/home");
   }
+
+  const refDialog = ref<HTMLDialogElement>();
+  const dialoged = reactive({
+    src: "",
+  });
+
+  function openDialog(img: Photo) {
+    refDialog.value?.showModal();
+    dialoged.src = img.src;
+  }
+
+  function closeDialog() {
+    refDialog.value?.close();
+  }
+
+  const refDialogBody = ref<HTMLDivElement>();
+  onClickOutside(refDialogBody, () => {
+    closeDialog();
+  });
 </script>
 
 <template>
   <BaseContainer v-if="item" class="pb-8">
-    <section class="px-3">
-      <div class="flex justify-between items-center">
-        <div class="form-control"></div>
+    <dialog ref="refDialog" class="z-[999] fixed bg-transparent">
+      <div ref="refDialogBody" class="relative">
+        <div class="absolute right-0 -mt-3 -mr-3 sm:-mt-4 sm:-mr-4 space-x-1">
+          <a class="btn btn-sm sm:btn-md btn-primary btn-circle" :href="dialoged.src" download>
+            <Icon class="h-5 w-5" name="mdi-download" />
+          </a>
+          <button class="btn btn-sm sm:btn-md btn-primary btn-circle" @click="closeDialog()">
+            <Icon class="h-5 w-5" name="mdi-close" />
+          </button>
+        </div>
+
+        <img class="max-w-[80vw] max-h-[80vh]" :src="dialoged.src" />
       </div>
-      <div class="grid grid-cols-1 gap-3">
+    </dialog>
+    <section class="px-3">
+      <div class="space-y-3">
         <BaseCard>
           <template #title>
             <BaseSectionHeader>
@@ -314,10 +375,16 @@
           </template>
           <template #title-actions>
             <div class="modal-action mt-0">
-              <label class="label cursor-pointer mr-auto">
+              <label v-if="!hasNested" class="label cursor-pointer mr-auto">
                 <input v-model="preferences.showEmpty" type="checkbox" class="toggle toggle-primary" />
                 <span class="label-text ml-4"> Show Empty </span>
               </label>
+              <BaseButton v-else class="mr-auto" size="sm" @click="$router.go(-1)">
+                <template #icon>
+                  <Icon name="mdi-arrow-left" class="h-5 w-5" />
+                </template>
+                Back
+              </BaseButton>
               <BaseButton size="sm" :to="`/item/${itemId}/edit`">
                 <template #icon>
                   <Icon name="mdi-pencil" />
@@ -330,71 +397,84 @@
                 </template>
                 Delete
               </BaseButton>
+              <BaseButton size="sm" :to="`/item/${itemId}/log`">
+                <template #icon>
+                  <Icon name="mdi-post" />
+                </template>
+                Log
+              </BaseButton>
             </div>
           </template>
 
-          <DetailsSection :details="itemDetails" />
+          <DetailsSection v-if="!hasNested" :details="itemDetails" />
         </BaseCard>
 
-        <BaseCard v-if="showAttachments">
-          <template #title> Attachments </template>
-          <DetailsSection :details="attachmentDetails">
-            <template #manuals>
-              <ItemAttachmentsList
-                v-if="attachments.manuals.length > 0"
-                :attachments="attachments.manuals"
-                :item-id="item.id"
-              />
-            </template>
-            <template #attachments>
-              <ItemAttachmentsList
-                v-if="attachments.attachments.length > 0"
-                :attachments="attachments.attachments"
-                :item-id="item.id"
-              />
-            </template>
-            <template #warranty>
-              <ItemAttachmentsList
-                v-if="attachments.warranty.length > 0"
-                :attachments="attachments.warranty"
-                :item-id="item.id"
-              />
-            </template>
-            <template #photos>
-              <ItemAttachmentsList
-                v-if="attachments.photos.length > 0"
-                :attachments="attachments.photos"
-                :item-id="item.id"
-              />
-            </template>
-            <template #receipts>
-              <ItemAttachmentsList
-                v-if="attachments.receipts.length > 0"
-                :attachments="attachments.receipts"
-                :item-id="item.id"
-              />
-            </template>
-          </DetailsSection>
-        </BaseCard>
+        <NuxtPage :item="item" :page-key="itemId" />
+        <div v-if="!hasNested">
+          <BaseCard v-if="photos && photos.length > 0">
+            <template #title> Photos </template>
+            <div
+              class="container border-t border-gray-300 p-4 flex flex-wrap gap-2 mx-auto max-h-[500px] overflow-y-scroll scroll-bg"
+            >
+              <button v-for="(img, i) in photos" :key="i" @click="openDialog(img)">
+                <img class="rounded max-h-[200px]" :src="img.src" />
+              </button>
+            </div>
+          </BaseCard>
 
-        <BaseCard v-if="showPurchase">
-          <template #title> Purchase Details </template>
-          <DetailsSection :details="purchaseDetails" />
-        </BaseCard>
+          <BaseCard v-if="showAttachments">
+            <template #title> Attachments </template>
+            <DetailsSection :details="attachmentDetails">
+              <template #manuals>
+                <ItemAttachmentsList
+                  v-if="attachments.manuals.length > 0"
+                  :attachments="attachments.manuals"
+                  :item-id="item.id"
+                />
+              </template>
+              <template #attachments>
+                <ItemAttachmentsList
+                  v-if="attachments.attachments.length > 0"
+                  :attachments="attachments.attachments"
+                  :item-id="item.id"
+                />
+              </template>
+              <template #warranty>
+                <ItemAttachmentsList
+                  v-if="attachments.warranty.length > 0"
+                  :attachments="attachments.warranty"
+                  :item-id="item.id"
+                />
+              </template>
+              <template #receipts>
+                <ItemAttachmentsList
+                  v-if="attachments.receipts.length > 0"
+                  :attachments="attachments.receipts"
+                  :item-id="item.id"
+                />
+              </template>
+            </DetailsSection>
+          </BaseCard>
 
-        <BaseCard v-if="showWarranty">
-          <template #title> Warranty Details </template>
-          <DetailsSection :details="warrantyDetails" />
-        </BaseCard>
+          <BaseCard v-if="showPurchase">
+            <template #title> Purchase Details </template>
+            <DetailsSection :details="purchaseDetails" />
+          </BaseCard>
 
-        <BaseCard v-if="showSold">
-          <template #title> Sold Details </template>
-          <DetailsSection :details="soldDetails" />
-        </BaseCard>
+          <BaseCard v-if="showWarranty">
+            <template #title> Warranty Details </template>
+            <DetailsSection :details="warrantyDetails" />
+          </BaseCard>
+
+          <BaseCard v-if="showSold">
+            <template #title> Sold Details </template>
+            <DetailsSection :details="soldDetails" />
+          </BaseCard>
+        </div>
       </div>
     </section>
 
-    <section class="my-6 px-3">
+    <section v-if="!hasNested" class="my-6 px-3">
       <BaseSectionHeader v-if="item && item.children && item.children.length > 0"> Child Items </BaseSectionHeader>
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <ItemCard v-for="child in item.children" :key="child.id" :item="child" />
@@ -402,3 +482,19 @@
     </section>
   </BaseContainer>
 </template>
+
+<style lang="css" scoped>
+  /* Style dialog background */
+  dialog::backdrop {
+    background: rgba(0, 0, 0, 0.5);
+  }
+
+  .scroll-bg::-webkit-scrollbar {
+    width: 0.5rem;
+  }
+
+  .scroll-bg::-webkit-scrollbar-thumb {
+    border-radius: 0.25rem;
+    @apply bg-base-300;
+  }
+</style>

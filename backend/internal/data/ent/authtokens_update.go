@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/google/uuid"
+	"github.com/hay-kot/homebox/backend/internal/data/ent/authroles"
 	"github.com/hay-kot/homebox/backend/internal/data/ent/authtokens"
 	"github.com/hay-kot/homebox/backend/internal/data/ent/predicate"
 	"github.com/hay-kot/homebox/backend/internal/data/ent/user"
@@ -75,6 +76,25 @@ func (atu *AuthTokensUpdate) SetUser(u *User) *AuthTokensUpdate {
 	return atu.SetUserID(u.ID)
 }
 
+// SetRolesID sets the "roles" edge to the AuthRoles entity by ID.
+func (atu *AuthTokensUpdate) SetRolesID(id int) *AuthTokensUpdate {
+	atu.mutation.SetRolesID(id)
+	return atu
+}
+
+// SetNillableRolesID sets the "roles" edge to the AuthRoles entity by ID if the given value is not nil.
+func (atu *AuthTokensUpdate) SetNillableRolesID(id *int) *AuthTokensUpdate {
+	if id != nil {
+		atu = atu.SetRolesID(*id)
+	}
+	return atu
+}
+
+// SetRoles sets the "roles" edge to the AuthRoles entity.
+func (atu *AuthTokensUpdate) SetRoles(a *AuthRoles) *AuthTokensUpdate {
+	return atu.SetRolesID(a.ID)
+}
+
 // Mutation returns the AuthTokensMutation object of the builder.
 func (atu *AuthTokensUpdate) Mutation() *AuthTokensMutation {
 	return atu.mutation
@@ -83,6 +103,12 @@ func (atu *AuthTokensUpdate) Mutation() *AuthTokensMutation {
 // ClearUser clears the "user" edge to the User entity.
 func (atu *AuthTokensUpdate) ClearUser() *AuthTokensUpdate {
 	atu.mutation.ClearUser()
+	return atu
+}
+
+// ClearRoles clears the "roles" edge to the AuthRoles entity.
+func (atu *AuthTokensUpdate) ClearRoles() *AuthTokensUpdate {
+	atu.mutation.ClearRoles()
 	return atu
 }
 
@@ -168,25 +194,13 @@ func (atu *AuthTokensUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 	}
 	if value, ok := atu.mutation.UpdatedAt(); ok {
-		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeTime,
-			Value:  value,
-			Column: authtokens.FieldUpdatedAt,
-		})
+		_spec.SetField(authtokens.FieldUpdatedAt, field.TypeTime, value)
 	}
 	if value, ok := atu.mutation.Token(); ok {
-		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeBytes,
-			Value:  value,
-			Column: authtokens.FieldToken,
-		})
+		_spec.SetField(authtokens.FieldToken, field.TypeBytes, value)
 	}
 	if value, ok := atu.mutation.ExpiresAt(); ok {
-		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeTime,
-			Value:  value,
-			Column: authtokens.FieldExpiresAt,
-		})
+		_spec.SetField(authtokens.FieldExpiresAt, field.TypeTime, value)
 	}
 	if atu.mutation.UserCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -215,6 +229,41 @@ func (atu *AuthTokensUpdate) sqlSave(ctx context.Context) (n int, err error) {
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeUUID,
 					Column: user.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if atu.mutation.RolesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   authtokens.RolesTable,
+			Columns: []string{authtokens.RolesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: authroles.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := atu.mutation.RolesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   authtokens.RolesTable,
+			Columns: []string{authtokens.RolesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: authroles.FieldID,
 				},
 			},
 		}
@@ -287,6 +336,25 @@ func (atuo *AuthTokensUpdateOne) SetUser(u *User) *AuthTokensUpdateOne {
 	return atuo.SetUserID(u.ID)
 }
 
+// SetRolesID sets the "roles" edge to the AuthRoles entity by ID.
+func (atuo *AuthTokensUpdateOne) SetRolesID(id int) *AuthTokensUpdateOne {
+	atuo.mutation.SetRolesID(id)
+	return atuo
+}
+
+// SetNillableRolesID sets the "roles" edge to the AuthRoles entity by ID if the given value is not nil.
+func (atuo *AuthTokensUpdateOne) SetNillableRolesID(id *int) *AuthTokensUpdateOne {
+	if id != nil {
+		atuo = atuo.SetRolesID(*id)
+	}
+	return atuo
+}
+
+// SetRoles sets the "roles" edge to the AuthRoles entity.
+func (atuo *AuthTokensUpdateOne) SetRoles(a *AuthRoles) *AuthTokensUpdateOne {
+	return atuo.SetRolesID(a.ID)
+}
+
 // Mutation returns the AuthTokensMutation object of the builder.
 func (atuo *AuthTokensUpdateOne) Mutation() *AuthTokensMutation {
 	return atuo.mutation
@@ -295,6 +363,12 @@ func (atuo *AuthTokensUpdateOne) Mutation() *AuthTokensMutation {
 // ClearUser clears the "user" edge to the User entity.
 func (atuo *AuthTokensUpdateOne) ClearUser() *AuthTokensUpdateOne {
 	atuo.mutation.ClearUser()
+	return atuo
+}
+
+// ClearRoles clears the "roles" edge to the AuthRoles entity.
+func (atuo *AuthTokensUpdateOne) ClearRoles() *AuthTokensUpdateOne {
+	atuo.mutation.ClearRoles()
 	return atuo
 }
 
@@ -410,25 +484,13 @@ func (atuo *AuthTokensUpdateOne) sqlSave(ctx context.Context) (_node *AuthTokens
 		}
 	}
 	if value, ok := atuo.mutation.UpdatedAt(); ok {
-		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeTime,
-			Value:  value,
-			Column: authtokens.FieldUpdatedAt,
-		})
+		_spec.SetField(authtokens.FieldUpdatedAt, field.TypeTime, value)
 	}
 	if value, ok := atuo.mutation.Token(); ok {
-		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeBytes,
-			Value:  value,
-			Column: authtokens.FieldToken,
-		})
+		_spec.SetField(authtokens.FieldToken, field.TypeBytes, value)
 	}
 	if value, ok := atuo.mutation.ExpiresAt(); ok {
-		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeTime,
-			Value:  value,
-			Column: authtokens.FieldExpiresAt,
-		})
+		_spec.SetField(authtokens.FieldExpiresAt, field.TypeTime, value)
 	}
 	if atuo.mutation.UserCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -457,6 +519,41 @@ func (atuo *AuthTokensUpdateOne) sqlSave(ctx context.Context) (_node *AuthTokens
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeUUID,
 					Column: user.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if atuo.mutation.RolesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   authtokens.RolesTable,
+			Columns: []string{authtokens.RolesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: authroles.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := atuo.mutation.RolesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   authtokens.RolesTable,
+			Columns: []string{authtokens.RolesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: authroles.FieldID,
 				},
 			},
 		}

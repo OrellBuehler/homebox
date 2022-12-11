@@ -31,6 +31,8 @@ const (
 	FieldInsured = "insured"
 	// FieldArchived holds the string denoting the archived field in the database.
 	FieldArchived = "archived"
+	// FieldAssetID holds the string denoting the asset_id field in the database.
+	FieldAssetID = "asset_id"
 	// FieldSerialNumber holds the string denoting the serial_number field in the database.
 	FieldSerialNumber = "serial_number"
 	// FieldModelNumber holds the string denoting the model_number field in the database.
@@ -69,6 +71,8 @@ const (
 	EdgeLocation = "location"
 	// EdgeFields holds the string denoting the fields edge name in mutations.
 	EdgeFields = "fields"
+	// EdgeMaintenanceEntries holds the string denoting the maintenance_entries edge name in mutations.
+	EdgeMaintenanceEntries = "maintenance_entries"
 	// EdgeAttachments holds the string denoting the attachments edge name in mutations.
 	EdgeAttachments = "attachments"
 	// Table holds the table name of the item in the database.
@@ -107,6 +111,13 @@ const (
 	FieldsInverseTable = "item_fields"
 	// FieldsColumn is the table column denoting the fields relation/edge.
 	FieldsColumn = "item_fields"
+	// MaintenanceEntriesTable is the table that holds the maintenance_entries relation/edge.
+	MaintenanceEntriesTable = "maintenance_entries"
+	// MaintenanceEntriesInverseTable is the table name for the MaintenanceEntry entity.
+	// It exists in this package in order to avoid circular dependency with the "maintenanceentry" package.
+	MaintenanceEntriesInverseTable = "maintenance_entries"
+	// MaintenanceEntriesColumn is the table column denoting the maintenance_entries relation/edge.
+	MaintenanceEntriesColumn = "item_id"
 	// AttachmentsTable is the table that holds the attachments relation/edge.
 	AttachmentsTable = "attachments"
 	// AttachmentsInverseTable is the table name for the Attachment entity.
@@ -128,6 +139,7 @@ var Columns = []string{
 	FieldQuantity,
 	FieldInsured,
 	FieldArchived,
+	FieldAssetID,
 	FieldSerialNumber,
 	FieldModelNumber,
 	FieldManufacturer,
@@ -193,6 +205,8 @@ var (
 	DefaultInsured bool
 	// DefaultArchived holds the default value on creation for the "archived" field.
 	DefaultArchived bool
+	// DefaultAssetID holds the default value on creation for the "asset_id" field.
+	DefaultAssetID int
 	// SerialNumberValidator is a validator for the "serial_number" field. It is called by the builders before save.
 	SerialNumberValidator func(string) error
 	// ModelNumberValidator is a validator for the "model_number" field. It is called by the builders before save.

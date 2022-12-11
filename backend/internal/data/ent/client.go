@@ -12,15 +12,16 @@ import (
 	"github.com/hay-kot/homebox/backend/internal/data/ent/migrate"
 
 	"github.com/hay-kot/homebox/backend/internal/data/ent/attachment"
+	"github.com/hay-kot/homebox/backend/internal/data/ent/authroles"
 	"github.com/hay-kot/homebox/backend/internal/data/ent/authtokens"
 	"github.com/hay-kot/homebox/backend/internal/data/ent/document"
-	"github.com/hay-kot/homebox/backend/internal/data/ent/documenttoken"
 	"github.com/hay-kot/homebox/backend/internal/data/ent/group"
 	"github.com/hay-kot/homebox/backend/internal/data/ent/groupinvitationtoken"
 	"github.com/hay-kot/homebox/backend/internal/data/ent/item"
 	"github.com/hay-kot/homebox/backend/internal/data/ent/itemfield"
 	"github.com/hay-kot/homebox/backend/internal/data/ent/label"
 	"github.com/hay-kot/homebox/backend/internal/data/ent/location"
+	"github.com/hay-kot/homebox/backend/internal/data/ent/maintenanceentry"
 	"github.com/hay-kot/homebox/backend/internal/data/ent/user"
 
 	"entgo.io/ent/dialect"
@@ -35,12 +36,12 @@ type Client struct {
 	Schema *migrate.Schema
 	// Attachment is the client for interacting with the Attachment builders.
 	Attachment *AttachmentClient
+	// AuthRoles is the client for interacting with the AuthRoles builders.
+	AuthRoles *AuthRolesClient
 	// AuthTokens is the client for interacting with the AuthTokens builders.
 	AuthTokens *AuthTokensClient
 	// Document is the client for interacting with the Document builders.
 	Document *DocumentClient
-	// DocumentToken is the client for interacting with the DocumentToken builders.
-	DocumentToken *DocumentTokenClient
 	// Group is the client for interacting with the Group builders.
 	Group *GroupClient
 	// GroupInvitationToken is the client for interacting with the GroupInvitationToken builders.
@@ -53,6 +54,8 @@ type Client struct {
 	Label *LabelClient
 	// Location is the client for interacting with the Location builders.
 	Location *LocationClient
+	// MaintenanceEntry is the client for interacting with the MaintenanceEntry builders.
+	MaintenanceEntry *MaintenanceEntryClient
 	// User is the client for interacting with the User builders.
 	User *UserClient
 }
@@ -69,15 +72,16 @@ func NewClient(opts ...Option) *Client {
 func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
 	c.Attachment = NewAttachmentClient(c.config)
+	c.AuthRoles = NewAuthRolesClient(c.config)
 	c.AuthTokens = NewAuthTokensClient(c.config)
 	c.Document = NewDocumentClient(c.config)
-	c.DocumentToken = NewDocumentTokenClient(c.config)
 	c.Group = NewGroupClient(c.config)
 	c.GroupInvitationToken = NewGroupInvitationTokenClient(c.config)
 	c.Item = NewItemClient(c.config)
 	c.ItemField = NewItemFieldClient(c.config)
 	c.Label = NewLabelClient(c.config)
 	c.Location = NewLocationClient(c.config)
+	c.MaintenanceEntry = NewMaintenanceEntryClient(c.config)
 	c.User = NewUserClient(c.config)
 }
 
@@ -113,15 +117,16 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		ctx:                  ctx,
 		config:               cfg,
 		Attachment:           NewAttachmentClient(cfg),
+		AuthRoles:            NewAuthRolesClient(cfg),
 		AuthTokens:           NewAuthTokensClient(cfg),
 		Document:             NewDocumentClient(cfg),
-		DocumentToken:        NewDocumentTokenClient(cfg),
 		Group:                NewGroupClient(cfg),
 		GroupInvitationToken: NewGroupInvitationTokenClient(cfg),
 		Item:                 NewItemClient(cfg),
 		ItemField:            NewItemFieldClient(cfg),
 		Label:                NewLabelClient(cfg),
 		Location:             NewLocationClient(cfg),
+		MaintenanceEntry:     NewMaintenanceEntryClient(cfg),
 		User:                 NewUserClient(cfg),
 	}, nil
 }
@@ -143,15 +148,16 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		ctx:                  ctx,
 		config:               cfg,
 		Attachment:           NewAttachmentClient(cfg),
+		AuthRoles:            NewAuthRolesClient(cfg),
 		AuthTokens:           NewAuthTokensClient(cfg),
 		Document:             NewDocumentClient(cfg),
-		DocumentToken:        NewDocumentTokenClient(cfg),
 		Group:                NewGroupClient(cfg),
 		GroupInvitationToken: NewGroupInvitationTokenClient(cfg),
 		Item:                 NewItemClient(cfg),
 		ItemField:            NewItemFieldClient(cfg),
 		Label:                NewLabelClient(cfg),
 		Location:             NewLocationClient(cfg),
+		MaintenanceEntry:     NewMaintenanceEntryClient(cfg),
 		User:                 NewUserClient(cfg),
 	}, nil
 }
@@ -182,15 +188,16 @@ func (c *Client) Close() error {
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
 	c.Attachment.Use(hooks...)
+	c.AuthRoles.Use(hooks...)
 	c.AuthTokens.Use(hooks...)
 	c.Document.Use(hooks...)
-	c.DocumentToken.Use(hooks...)
 	c.Group.Use(hooks...)
 	c.GroupInvitationToken.Use(hooks...)
 	c.Item.Use(hooks...)
 	c.ItemField.Use(hooks...)
 	c.Label.Use(hooks...)
 	c.Location.Use(hooks...)
+	c.MaintenanceEntry.Use(hooks...)
 	c.User.Use(hooks...)
 }
 
@@ -250,7 +257,7 @@ func (c *AttachmentClient) DeleteOne(a *Attachment) *AttachmentDeleteOne {
 	return c.DeleteOneID(a.ID)
 }
 
-// DeleteOne returns a builder for deleting the given entity by its id.
+// DeleteOneID returns a builder for deleting the given entity by its id.
 func (c *AttachmentClient) DeleteOneID(id uuid.UUID) *AttachmentDeleteOne {
 	builder := c.Delete().Where(attachment.ID(id))
 	builder.mutation.id = &id
@@ -282,7 +289,7 @@ func (c *AttachmentClient) GetX(ctx context.Context, id uuid.UUID) *Attachment {
 // QueryItem queries the item edge of a Attachment.
 func (c *AttachmentClient) QueryItem(a *Attachment) *ItemQuery {
 	query := &ItemQuery{config: c.config}
-	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := a.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(attachment.Table, attachment.FieldID, id),
@@ -298,7 +305,7 @@ func (c *AttachmentClient) QueryItem(a *Attachment) *ItemQuery {
 // QueryDocument queries the document edge of a Attachment.
 func (c *AttachmentClient) QueryDocument(a *Attachment) *DocumentQuery {
 	query := &DocumentQuery{config: c.config}
-	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := a.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(attachment.Table, attachment.FieldID, id),
@@ -314,6 +321,112 @@ func (c *AttachmentClient) QueryDocument(a *Attachment) *DocumentQuery {
 // Hooks returns the client hooks.
 func (c *AttachmentClient) Hooks() []Hook {
 	return c.hooks.Attachment
+}
+
+// AuthRolesClient is a client for the AuthRoles schema.
+type AuthRolesClient struct {
+	config
+}
+
+// NewAuthRolesClient returns a client for the AuthRoles from the given config.
+func NewAuthRolesClient(c config) *AuthRolesClient {
+	return &AuthRolesClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `authroles.Hooks(f(g(h())))`.
+func (c *AuthRolesClient) Use(hooks ...Hook) {
+	c.hooks.AuthRoles = append(c.hooks.AuthRoles, hooks...)
+}
+
+// Create returns a builder for creating a AuthRoles entity.
+func (c *AuthRolesClient) Create() *AuthRolesCreate {
+	mutation := newAuthRolesMutation(c.config, OpCreate)
+	return &AuthRolesCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of AuthRoles entities.
+func (c *AuthRolesClient) CreateBulk(builders ...*AuthRolesCreate) *AuthRolesCreateBulk {
+	return &AuthRolesCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for AuthRoles.
+func (c *AuthRolesClient) Update() *AuthRolesUpdate {
+	mutation := newAuthRolesMutation(c.config, OpUpdate)
+	return &AuthRolesUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *AuthRolesClient) UpdateOne(ar *AuthRoles) *AuthRolesUpdateOne {
+	mutation := newAuthRolesMutation(c.config, OpUpdateOne, withAuthRoles(ar))
+	return &AuthRolesUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *AuthRolesClient) UpdateOneID(id int) *AuthRolesUpdateOne {
+	mutation := newAuthRolesMutation(c.config, OpUpdateOne, withAuthRolesID(id))
+	return &AuthRolesUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for AuthRoles.
+func (c *AuthRolesClient) Delete() *AuthRolesDelete {
+	mutation := newAuthRolesMutation(c.config, OpDelete)
+	return &AuthRolesDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *AuthRolesClient) DeleteOne(ar *AuthRoles) *AuthRolesDeleteOne {
+	return c.DeleteOneID(ar.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *AuthRolesClient) DeleteOneID(id int) *AuthRolesDeleteOne {
+	builder := c.Delete().Where(authroles.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &AuthRolesDeleteOne{builder}
+}
+
+// Query returns a query builder for AuthRoles.
+func (c *AuthRolesClient) Query() *AuthRolesQuery {
+	return &AuthRolesQuery{
+		config: c.config,
+	}
+}
+
+// Get returns a AuthRoles entity by its id.
+func (c *AuthRolesClient) Get(ctx context.Context, id int) (*AuthRoles, error) {
+	return c.Query().Where(authroles.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *AuthRolesClient) GetX(ctx context.Context, id int) *AuthRoles {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryToken queries the token edge of a AuthRoles.
+func (c *AuthRolesClient) QueryToken(ar *AuthRoles) *AuthTokensQuery {
+	query := &AuthTokensQuery{config: c.config}
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := ar.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(authroles.Table, authroles.FieldID, id),
+			sqlgraph.To(authtokens.Table, authtokens.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, true, authroles.TokenTable, authroles.TokenColumn),
+		)
+		fromV = sqlgraph.Neighbors(ar.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *AuthRolesClient) Hooks() []Hook {
+	return c.hooks.AuthRoles
 }
 
 // AuthTokensClient is a client for the AuthTokens schema.
@@ -372,7 +485,7 @@ func (c *AuthTokensClient) DeleteOne(at *AuthTokens) *AuthTokensDeleteOne {
 	return c.DeleteOneID(at.ID)
 }
 
-// DeleteOne returns a builder for deleting the given entity by its id.
+// DeleteOneID returns a builder for deleting the given entity by its id.
 func (c *AuthTokensClient) DeleteOneID(id uuid.UUID) *AuthTokensDeleteOne {
 	builder := c.Delete().Where(authtokens.ID(id))
 	builder.mutation.id = &id
@@ -404,12 +517,28 @@ func (c *AuthTokensClient) GetX(ctx context.Context, id uuid.UUID) *AuthTokens {
 // QueryUser queries the user edge of a AuthTokens.
 func (c *AuthTokensClient) QueryUser(at *AuthTokens) *UserQuery {
 	query := &UserQuery{config: c.config}
-	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := at.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(authtokens.Table, authtokens.FieldID, id),
 			sqlgraph.To(user.Table, user.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, authtokens.UserTable, authtokens.UserColumn),
+		)
+		fromV = sqlgraph.Neighbors(at.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryRoles queries the roles edge of a AuthTokens.
+func (c *AuthTokensClient) QueryRoles(at *AuthTokens) *AuthRolesQuery {
+	query := &AuthRolesQuery{config: c.config}
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := at.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(authtokens.Table, authtokens.FieldID, id),
+			sqlgraph.To(authroles.Table, authroles.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, false, authtokens.RolesTable, authtokens.RolesColumn),
 		)
 		fromV = sqlgraph.Neighbors(at.driver.Dialect(), step)
 		return fromV, nil
@@ -478,7 +607,7 @@ func (c *DocumentClient) DeleteOne(d *Document) *DocumentDeleteOne {
 	return c.DeleteOneID(d.ID)
 }
 
-// DeleteOne returns a builder for deleting the given entity by its id.
+// DeleteOneID returns a builder for deleting the given entity by its id.
 func (c *DocumentClient) DeleteOneID(id uuid.UUID) *DocumentDeleteOne {
 	builder := c.Delete().Where(document.ID(id))
 	builder.mutation.id = &id
@@ -510,7 +639,7 @@ func (c *DocumentClient) GetX(ctx context.Context, id uuid.UUID) *Document {
 // QueryGroup queries the group edge of a Document.
 func (c *DocumentClient) QueryGroup(d *Document) *GroupQuery {
 	query := &GroupQuery{config: c.config}
-	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := d.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(document.Table, document.FieldID, id),
@@ -523,26 +652,10 @@ func (c *DocumentClient) QueryGroup(d *Document) *GroupQuery {
 	return query
 }
 
-// QueryDocumentTokens queries the document_tokens edge of a Document.
-func (c *DocumentClient) QueryDocumentTokens(d *Document) *DocumentTokenQuery {
-	query := &DocumentTokenQuery{config: c.config}
-	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
-		id := d.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(document.Table, document.FieldID, id),
-			sqlgraph.To(documenttoken.Table, documenttoken.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, document.DocumentTokensTable, document.DocumentTokensColumn),
-		)
-		fromV = sqlgraph.Neighbors(d.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
 // QueryAttachments queries the attachments edge of a Document.
 func (c *DocumentClient) QueryAttachments(d *Document) *AttachmentQuery {
 	query := &AttachmentQuery{config: c.config}
-	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := d.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(document.Table, document.FieldID, id),
@@ -558,112 +671,6 @@ func (c *DocumentClient) QueryAttachments(d *Document) *AttachmentQuery {
 // Hooks returns the client hooks.
 func (c *DocumentClient) Hooks() []Hook {
 	return c.hooks.Document
-}
-
-// DocumentTokenClient is a client for the DocumentToken schema.
-type DocumentTokenClient struct {
-	config
-}
-
-// NewDocumentTokenClient returns a client for the DocumentToken from the given config.
-func NewDocumentTokenClient(c config) *DocumentTokenClient {
-	return &DocumentTokenClient{config: c}
-}
-
-// Use adds a list of mutation hooks to the hooks stack.
-// A call to `Use(f, g, h)` equals to `documenttoken.Hooks(f(g(h())))`.
-func (c *DocumentTokenClient) Use(hooks ...Hook) {
-	c.hooks.DocumentToken = append(c.hooks.DocumentToken, hooks...)
-}
-
-// Create returns a builder for creating a DocumentToken entity.
-func (c *DocumentTokenClient) Create() *DocumentTokenCreate {
-	mutation := newDocumentTokenMutation(c.config, OpCreate)
-	return &DocumentTokenCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// CreateBulk returns a builder for creating a bulk of DocumentToken entities.
-func (c *DocumentTokenClient) CreateBulk(builders ...*DocumentTokenCreate) *DocumentTokenCreateBulk {
-	return &DocumentTokenCreateBulk{config: c.config, builders: builders}
-}
-
-// Update returns an update builder for DocumentToken.
-func (c *DocumentTokenClient) Update() *DocumentTokenUpdate {
-	mutation := newDocumentTokenMutation(c.config, OpUpdate)
-	return &DocumentTokenUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// UpdateOne returns an update builder for the given entity.
-func (c *DocumentTokenClient) UpdateOne(dt *DocumentToken) *DocumentTokenUpdateOne {
-	mutation := newDocumentTokenMutation(c.config, OpUpdateOne, withDocumentToken(dt))
-	return &DocumentTokenUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// UpdateOneID returns an update builder for the given id.
-func (c *DocumentTokenClient) UpdateOneID(id uuid.UUID) *DocumentTokenUpdateOne {
-	mutation := newDocumentTokenMutation(c.config, OpUpdateOne, withDocumentTokenID(id))
-	return &DocumentTokenUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// Delete returns a delete builder for DocumentToken.
-func (c *DocumentTokenClient) Delete() *DocumentTokenDelete {
-	mutation := newDocumentTokenMutation(c.config, OpDelete)
-	return &DocumentTokenDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// DeleteOne returns a builder for deleting the given entity.
-func (c *DocumentTokenClient) DeleteOne(dt *DocumentToken) *DocumentTokenDeleteOne {
-	return c.DeleteOneID(dt.ID)
-}
-
-// DeleteOne returns a builder for deleting the given entity by its id.
-func (c *DocumentTokenClient) DeleteOneID(id uuid.UUID) *DocumentTokenDeleteOne {
-	builder := c.Delete().Where(documenttoken.ID(id))
-	builder.mutation.id = &id
-	builder.mutation.op = OpDeleteOne
-	return &DocumentTokenDeleteOne{builder}
-}
-
-// Query returns a query builder for DocumentToken.
-func (c *DocumentTokenClient) Query() *DocumentTokenQuery {
-	return &DocumentTokenQuery{
-		config: c.config,
-	}
-}
-
-// Get returns a DocumentToken entity by its id.
-func (c *DocumentTokenClient) Get(ctx context.Context, id uuid.UUID) (*DocumentToken, error) {
-	return c.Query().Where(documenttoken.ID(id)).Only(ctx)
-}
-
-// GetX is like Get, but panics if an error occurs.
-func (c *DocumentTokenClient) GetX(ctx context.Context, id uuid.UUID) *DocumentToken {
-	obj, err := c.Get(ctx, id)
-	if err != nil {
-		panic(err)
-	}
-	return obj
-}
-
-// QueryDocument queries the document edge of a DocumentToken.
-func (c *DocumentTokenClient) QueryDocument(dt *DocumentToken) *DocumentQuery {
-	query := &DocumentQuery{config: c.config}
-	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
-		id := dt.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(documenttoken.Table, documenttoken.FieldID, id),
-			sqlgraph.To(document.Table, document.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, documenttoken.DocumentTable, documenttoken.DocumentColumn),
-		)
-		fromV = sqlgraph.Neighbors(dt.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// Hooks returns the client hooks.
-func (c *DocumentTokenClient) Hooks() []Hook {
-	return c.hooks.DocumentToken
 }
 
 // GroupClient is a client for the Group schema.
@@ -722,7 +729,7 @@ func (c *GroupClient) DeleteOne(gr *Group) *GroupDeleteOne {
 	return c.DeleteOneID(gr.ID)
 }
 
-// DeleteOne returns a builder for deleting the given entity by its id.
+// DeleteOneID returns a builder for deleting the given entity by its id.
 func (c *GroupClient) DeleteOneID(id uuid.UUID) *GroupDeleteOne {
 	builder := c.Delete().Where(group.ID(id))
 	builder.mutation.id = &id
@@ -754,7 +761,7 @@ func (c *GroupClient) GetX(ctx context.Context, id uuid.UUID) *Group {
 // QueryUsers queries the users edge of a Group.
 func (c *GroupClient) QueryUsers(gr *Group) *UserQuery {
 	query := &UserQuery{config: c.config}
-	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := gr.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(group.Table, group.FieldID, id),
@@ -770,7 +777,7 @@ func (c *GroupClient) QueryUsers(gr *Group) *UserQuery {
 // QueryLocations queries the locations edge of a Group.
 func (c *GroupClient) QueryLocations(gr *Group) *LocationQuery {
 	query := &LocationQuery{config: c.config}
-	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := gr.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(group.Table, group.FieldID, id),
@@ -786,7 +793,7 @@ func (c *GroupClient) QueryLocations(gr *Group) *LocationQuery {
 // QueryItems queries the items edge of a Group.
 func (c *GroupClient) QueryItems(gr *Group) *ItemQuery {
 	query := &ItemQuery{config: c.config}
-	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := gr.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(group.Table, group.FieldID, id),
@@ -802,7 +809,7 @@ func (c *GroupClient) QueryItems(gr *Group) *ItemQuery {
 // QueryLabels queries the labels edge of a Group.
 func (c *GroupClient) QueryLabels(gr *Group) *LabelQuery {
 	query := &LabelQuery{config: c.config}
-	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := gr.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(group.Table, group.FieldID, id),
@@ -818,7 +825,7 @@ func (c *GroupClient) QueryLabels(gr *Group) *LabelQuery {
 // QueryDocuments queries the documents edge of a Group.
 func (c *GroupClient) QueryDocuments(gr *Group) *DocumentQuery {
 	query := &DocumentQuery{config: c.config}
-	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := gr.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(group.Table, group.FieldID, id),
@@ -834,7 +841,7 @@ func (c *GroupClient) QueryDocuments(gr *Group) *DocumentQuery {
 // QueryInvitationTokens queries the invitation_tokens edge of a Group.
 func (c *GroupClient) QueryInvitationTokens(gr *Group) *GroupInvitationTokenQuery {
 	query := &GroupInvitationTokenQuery{config: c.config}
-	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := gr.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(group.Table, group.FieldID, id),
@@ -908,7 +915,7 @@ func (c *GroupInvitationTokenClient) DeleteOne(git *GroupInvitationToken) *Group
 	return c.DeleteOneID(git.ID)
 }
 
-// DeleteOne returns a builder for deleting the given entity by its id.
+// DeleteOneID returns a builder for deleting the given entity by its id.
 func (c *GroupInvitationTokenClient) DeleteOneID(id uuid.UUID) *GroupInvitationTokenDeleteOne {
 	builder := c.Delete().Where(groupinvitationtoken.ID(id))
 	builder.mutation.id = &id
@@ -940,7 +947,7 @@ func (c *GroupInvitationTokenClient) GetX(ctx context.Context, id uuid.UUID) *Gr
 // QueryGroup queries the group edge of a GroupInvitationToken.
 func (c *GroupInvitationTokenClient) QueryGroup(git *GroupInvitationToken) *GroupQuery {
 	query := &GroupQuery{config: c.config}
-	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := git.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(groupinvitationtoken.Table, groupinvitationtoken.FieldID, id),
@@ -1014,7 +1021,7 @@ func (c *ItemClient) DeleteOne(i *Item) *ItemDeleteOne {
 	return c.DeleteOneID(i.ID)
 }
 
-// DeleteOne returns a builder for deleting the given entity by its id.
+// DeleteOneID returns a builder for deleting the given entity by its id.
 func (c *ItemClient) DeleteOneID(id uuid.UUID) *ItemDeleteOne {
 	builder := c.Delete().Where(item.ID(id))
 	builder.mutation.id = &id
@@ -1046,7 +1053,7 @@ func (c *ItemClient) GetX(ctx context.Context, id uuid.UUID) *Item {
 // QueryParent queries the parent edge of a Item.
 func (c *ItemClient) QueryParent(i *Item) *ItemQuery {
 	query := &ItemQuery{config: c.config}
-	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := i.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(item.Table, item.FieldID, id),
@@ -1062,7 +1069,7 @@ func (c *ItemClient) QueryParent(i *Item) *ItemQuery {
 // QueryChildren queries the children edge of a Item.
 func (c *ItemClient) QueryChildren(i *Item) *ItemQuery {
 	query := &ItemQuery{config: c.config}
-	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := i.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(item.Table, item.FieldID, id),
@@ -1078,7 +1085,7 @@ func (c *ItemClient) QueryChildren(i *Item) *ItemQuery {
 // QueryGroup queries the group edge of a Item.
 func (c *ItemClient) QueryGroup(i *Item) *GroupQuery {
 	query := &GroupQuery{config: c.config}
-	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := i.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(item.Table, item.FieldID, id),
@@ -1094,7 +1101,7 @@ func (c *ItemClient) QueryGroup(i *Item) *GroupQuery {
 // QueryLabel queries the label edge of a Item.
 func (c *ItemClient) QueryLabel(i *Item) *LabelQuery {
 	query := &LabelQuery{config: c.config}
-	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := i.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(item.Table, item.FieldID, id),
@@ -1110,7 +1117,7 @@ func (c *ItemClient) QueryLabel(i *Item) *LabelQuery {
 // QueryLocation queries the location edge of a Item.
 func (c *ItemClient) QueryLocation(i *Item) *LocationQuery {
 	query := &LocationQuery{config: c.config}
-	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := i.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(item.Table, item.FieldID, id),
@@ -1126,7 +1133,7 @@ func (c *ItemClient) QueryLocation(i *Item) *LocationQuery {
 // QueryFields queries the fields edge of a Item.
 func (c *ItemClient) QueryFields(i *Item) *ItemFieldQuery {
 	query := &ItemFieldQuery{config: c.config}
-	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := i.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(item.Table, item.FieldID, id),
@@ -1139,10 +1146,26 @@ func (c *ItemClient) QueryFields(i *Item) *ItemFieldQuery {
 	return query
 }
 
+// QueryMaintenanceEntries queries the maintenance_entries edge of a Item.
+func (c *ItemClient) QueryMaintenanceEntries(i *Item) *MaintenanceEntryQuery {
+	query := &MaintenanceEntryQuery{config: c.config}
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := i.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(item.Table, item.FieldID, id),
+			sqlgraph.To(maintenanceentry.Table, maintenanceentry.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, item.MaintenanceEntriesTable, item.MaintenanceEntriesColumn),
+		)
+		fromV = sqlgraph.Neighbors(i.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // QueryAttachments queries the attachments edge of a Item.
 func (c *ItemClient) QueryAttachments(i *Item) *AttachmentQuery {
 	query := &AttachmentQuery{config: c.config}
-	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := i.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(item.Table, item.FieldID, id),
@@ -1216,7 +1239,7 @@ func (c *ItemFieldClient) DeleteOne(_if *ItemField) *ItemFieldDeleteOne {
 	return c.DeleteOneID(_if.ID)
 }
 
-// DeleteOne returns a builder for deleting the given entity by its id.
+// DeleteOneID returns a builder for deleting the given entity by its id.
 func (c *ItemFieldClient) DeleteOneID(id uuid.UUID) *ItemFieldDeleteOne {
 	builder := c.Delete().Where(itemfield.ID(id))
 	builder.mutation.id = &id
@@ -1248,7 +1271,7 @@ func (c *ItemFieldClient) GetX(ctx context.Context, id uuid.UUID) *ItemField {
 // QueryItem queries the item edge of a ItemField.
 func (c *ItemFieldClient) QueryItem(_if *ItemField) *ItemQuery {
 	query := &ItemQuery{config: c.config}
-	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := _if.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(itemfield.Table, itemfield.FieldID, id),
@@ -1322,7 +1345,7 @@ func (c *LabelClient) DeleteOne(l *Label) *LabelDeleteOne {
 	return c.DeleteOneID(l.ID)
 }
 
-// DeleteOne returns a builder for deleting the given entity by its id.
+// DeleteOneID returns a builder for deleting the given entity by its id.
 func (c *LabelClient) DeleteOneID(id uuid.UUID) *LabelDeleteOne {
 	builder := c.Delete().Where(label.ID(id))
 	builder.mutation.id = &id
@@ -1354,7 +1377,7 @@ func (c *LabelClient) GetX(ctx context.Context, id uuid.UUID) *Label {
 // QueryGroup queries the group edge of a Label.
 func (c *LabelClient) QueryGroup(l *Label) *GroupQuery {
 	query := &GroupQuery{config: c.config}
-	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := l.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(label.Table, label.FieldID, id),
@@ -1370,7 +1393,7 @@ func (c *LabelClient) QueryGroup(l *Label) *GroupQuery {
 // QueryItems queries the items edge of a Label.
 func (c *LabelClient) QueryItems(l *Label) *ItemQuery {
 	query := &ItemQuery{config: c.config}
-	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := l.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(label.Table, label.FieldID, id),
@@ -1444,7 +1467,7 @@ func (c *LocationClient) DeleteOne(l *Location) *LocationDeleteOne {
 	return c.DeleteOneID(l.ID)
 }
 
-// DeleteOne returns a builder for deleting the given entity by its id.
+// DeleteOneID returns a builder for deleting the given entity by its id.
 func (c *LocationClient) DeleteOneID(id uuid.UUID) *LocationDeleteOne {
 	builder := c.Delete().Where(location.ID(id))
 	builder.mutation.id = &id
@@ -1476,7 +1499,7 @@ func (c *LocationClient) GetX(ctx context.Context, id uuid.UUID) *Location {
 // QueryParent queries the parent edge of a Location.
 func (c *LocationClient) QueryParent(l *Location) *LocationQuery {
 	query := &LocationQuery{config: c.config}
-	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := l.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(location.Table, location.FieldID, id),
@@ -1492,7 +1515,7 @@ func (c *LocationClient) QueryParent(l *Location) *LocationQuery {
 // QueryChildren queries the children edge of a Location.
 func (c *LocationClient) QueryChildren(l *Location) *LocationQuery {
 	query := &LocationQuery{config: c.config}
-	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := l.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(location.Table, location.FieldID, id),
@@ -1508,7 +1531,7 @@ func (c *LocationClient) QueryChildren(l *Location) *LocationQuery {
 // QueryGroup queries the group edge of a Location.
 func (c *LocationClient) QueryGroup(l *Location) *GroupQuery {
 	query := &GroupQuery{config: c.config}
-	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := l.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(location.Table, location.FieldID, id),
@@ -1524,7 +1547,7 @@ func (c *LocationClient) QueryGroup(l *Location) *GroupQuery {
 // QueryItems queries the items edge of a Location.
 func (c *LocationClient) QueryItems(l *Location) *ItemQuery {
 	query := &ItemQuery{config: c.config}
-	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := l.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(location.Table, location.FieldID, id),
@@ -1540,6 +1563,112 @@ func (c *LocationClient) QueryItems(l *Location) *ItemQuery {
 // Hooks returns the client hooks.
 func (c *LocationClient) Hooks() []Hook {
 	return c.hooks.Location
+}
+
+// MaintenanceEntryClient is a client for the MaintenanceEntry schema.
+type MaintenanceEntryClient struct {
+	config
+}
+
+// NewMaintenanceEntryClient returns a client for the MaintenanceEntry from the given config.
+func NewMaintenanceEntryClient(c config) *MaintenanceEntryClient {
+	return &MaintenanceEntryClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `maintenanceentry.Hooks(f(g(h())))`.
+func (c *MaintenanceEntryClient) Use(hooks ...Hook) {
+	c.hooks.MaintenanceEntry = append(c.hooks.MaintenanceEntry, hooks...)
+}
+
+// Create returns a builder for creating a MaintenanceEntry entity.
+func (c *MaintenanceEntryClient) Create() *MaintenanceEntryCreate {
+	mutation := newMaintenanceEntryMutation(c.config, OpCreate)
+	return &MaintenanceEntryCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of MaintenanceEntry entities.
+func (c *MaintenanceEntryClient) CreateBulk(builders ...*MaintenanceEntryCreate) *MaintenanceEntryCreateBulk {
+	return &MaintenanceEntryCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for MaintenanceEntry.
+func (c *MaintenanceEntryClient) Update() *MaintenanceEntryUpdate {
+	mutation := newMaintenanceEntryMutation(c.config, OpUpdate)
+	return &MaintenanceEntryUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *MaintenanceEntryClient) UpdateOne(me *MaintenanceEntry) *MaintenanceEntryUpdateOne {
+	mutation := newMaintenanceEntryMutation(c.config, OpUpdateOne, withMaintenanceEntry(me))
+	return &MaintenanceEntryUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *MaintenanceEntryClient) UpdateOneID(id uuid.UUID) *MaintenanceEntryUpdateOne {
+	mutation := newMaintenanceEntryMutation(c.config, OpUpdateOne, withMaintenanceEntryID(id))
+	return &MaintenanceEntryUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for MaintenanceEntry.
+func (c *MaintenanceEntryClient) Delete() *MaintenanceEntryDelete {
+	mutation := newMaintenanceEntryMutation(c.config, OpDelete)
+	return &MaintenanceEntryDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *MaintenanceEntryClient) DeleteOne(me *MaintenanceEntry) *MaintenanceEntryDeleteOne {
+	return c.DeleteOneID(me.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *MaintenanceEntryClient) DeleteOneID(id uuid.UUID) *MaintenanceEntryDeleteOne {
+	builder := c.Delete().Where(maintenanceentry.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &MaintenanceEntryDeleteOne{builder}
+}
+
+// Query returns a query builder for MaintenanceEntry.
+func (c *MaintenanceEntryClient) Query() *MaintenanceEntryQuery {
+	return &MaintenanceEntryQuery{
+		config: c.config,
+	}
+}
+
+// Get returns a MaintenanceEntry entity by its id.
+func (c *MaintenanceEntryClient) Get(ctx context.Context, id uuid.UUID) (*MaintenanceEntry, error) {
+	return c.Query().Where(maintenanceentry.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *MaintenanceEntryClient) GetX(ctx context.Context, id uuid.UUID) *MaintenanceEntry {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryItem queries the item edge of a MaintenanceEntry.
+func (c *MaintenanceEntryClient) QueryItem(me *MaintenanceEntry) *ItemQuery {
+	query := &ItemQuery{config: c.config}
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := me.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(maintenanceentry.Table, maintenanceentry.FieldID, id),
+			sqlgraph.To(item.Table, item.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, maintenanceentry.ItemTable, maintenanceentry.ItemColumn),
+		)
+		fromV = sqlgraph.Neighbors(me.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *MaintenanceEntryClient) Hooks() []Hook {
+	return c.hooks.MaintenanceEntry
 }
 
 // UserClient is a client for the User schema.
@@ -1598,7 +1727,7 @@ func (c *UserClient) DeleteOne(u *User) *UserDeleteOne {
 	return c.DeleteOneID(u.ID)
 }
 
-// DeleteOne returns a builder for deleting the given entity by its id.
+// DeleteOneID returns a builder for deleting the given entity by its id.
 func (c *UserClient) DeleteOneID(id uuid.UUID) *UserDeleteOne {
 	builder := c.Delete().Where(user.ID(id))
 	builder.mutation.id = &id
@@ -1630,7 +1759,7 @@ func (c *UserClient) GetX(ctx context.Context, id uuid.UUID) *User {
 // QueryGroup queries the group edge of a User.
 func (c *UserClient) QueryGroup(u *User) *GroupQuery {
 	query := &GroupQuery{config: c.config}
-	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := u.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(user.Table, user.FieldID, id),
@@ -1646,7 +1775,7 @@ func (c *UserClient) QueryGroup(u *User) *GroupQuery {
 // QueryAuthTokens queries the auth_tokens edge of a User.
 func (c *UserClient) QueryAuthTokens(u *User) *AuthTokensQuery {
 	query := &AuthTokensQuery{config: c.config}
-	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := u.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(user.Table, user.FieldID, id),

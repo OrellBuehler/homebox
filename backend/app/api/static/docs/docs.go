@@ -21,6 +21,30 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/v1/actions/ensure-asset-ids": {
+            "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Group"
+                ],
+                "summary": "Get the current user",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.EnsureAssetIDResult"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/groups": {
             "get": {
                 "security": [
@@ -124,14 +148,106 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Group"
+                    "Statistics"
                 ],
-                "summary": "Get the current user's group",
+                "summary": "Get the current user's group statistics",
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/repo.GroupStatistics"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/groups/statistics/labels": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Statistics"
+                ],
+                "summary": "Get the current user's group statistics",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/repo.TotalsByOrganizer"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/groups/statistics/locations": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Statistics"
+                ],
+                "summary": "Get the current user's group statistics",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/repo.TotalsByOrganizer"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/groups/statistics/purchase-price": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Statistics"
+                ],
+                "summary": "Queries the changes overtime of the purchase price over time",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "start date",
+                        "name": "start",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "end date",
+                        "name": "end",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/repo.ValueOverTime"
                         }
                     }
                 }
@@ -425,43 +541,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/v1/items/{id}/attachments/download": {
-            "get": {
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ],
-                "produces": [
-                    "application/octet-stream"
-                ],
-                "tags": [
-                    "Items Attachments"
-                ],
-                "summary": "retrieves an attachment for an item",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Item ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Attachment token",
-                        "name": "token",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK"
-                    }
-                }
-            }
-        },
         "/v1/items/{id}/attachments/{attachment_id}": {
             "get": {
                 "security": [
@@ -571,6 +650,117 @@ const docTemplate = `{
                         "required": true
                     }
                 ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                }
+            }
+        },
+        "/v1/items/{id}/maintenance": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Maintenance"
+                ],
+                "summary": "Get Maintenance Log",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/repo.MaintenanceLog"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Maintenance"
+                ],
+                "summary": "Create Maintenance Entry",
+                "parameters": [
+                    {
+                        "description": "Entry Data",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/repo.MaintenanceEntryCreate"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/repo.MaintenanceEntry"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/items/{id}/maintenance/{entry_id}": {
+            "put": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Maintenance"
+                ],
+                "summary": "Update Maintenance Entry",
+                "parameters": [
+                    {
+                        "description": "Entry Data",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/repo.MaintenanceEntryUpdate"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/repo.MaintenanceEntry"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Maintenance"
+                ],
+                "summary": "Delete Maintenance Entry",
                 "responses": {
                     "204": {
                         "description": "No Content"
@@ -1213,6 +1403,9 @@ const docTemplate = `{
         "repo.GroupStatistics": {
             "type": "object",
             "properties": {
+                "totalItemPrice": {
+                    "type": "number"
+                },
                 "totalItems": {
                     "type": "integer"
                 },
@@ -1223,6 +1416,9 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "totalUsers": {
+                    "type": "integer"
+                },
+                "totalWithWarranty": {
                     "type": "integer"
                 }
             }
@@ -1325,6 +1521,10 @@ const docTemplate = `{
             "properties": {
                 "archived": {
                     "type": "boolean"
+                },
+                "assetId": {
+                    "type": "string",
+                    "example": "0"
                 },
                 "attachments": {
                     "type": "array",
@@ -1478,6 +1678,9 @@ const docTemplate = `{
             "properties": {
                 "archived": {
                     "type": "boolean"
+                },
+                "assetId": {
+                    "type": "string"
                 },
                 "description": {
                     "type": "string"
@@ -1733,6 +1936,83 @@ const docTemplate = `{
                 }
             }
         },
+        "repo.MaintenanceEntry": {
+            "type": "object",
+            "properties": {
+                "cost": {
+                    "type": "string",
+                    "example": "0"
+                },
+                "date": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "repo.MaintenanceEntryCreate": {
+            "type": "object",
+            "properties": {
+                "cost": {
+                    "type": "string",
+                    "example": "0"
+                },
+                "date": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "repo.MaintenanceEntryUpdate": {
+            "type": "object",
+            "properties": {
+                "cost": {
+                    "type": "string",
+                    "example": "0"
+                },
+                "date": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "repo.MaintenanceLog": {
+            "type": "object",
+            "properties": {
+                "costAverage": {
+                    "type": "number"
+                },
+                "costTotal": {
+                    "type": "number"
+                },
+                "entries": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/repo.MaintenanceEntry"
+                    }
+                },
+                "itemId": {
+                    "type": "string"
+                }
+            }
+        },
         "repo.PaginationResult-repo_ItemSummary": {
             "type": "object",
             "properties": {
@@ -1750,6 +2030,20 @@ const docTemplate = `{
                 },
                 "total": {
                     "type": "integer"
+                }
+            }
+        },
+        "repo.TotalsByOrganizer": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "total": {
+                    "type": "number"
                 }
             }
         },
@@ -1787,6 +2081,43 @@ const docTemplate = `{
                 },
                 "name": {
                     "type": "string"
+                }
+            }
+        },
+        "repo.ValueOverTime": {
+            "type": "object",
+            "properties": {
+                "end": {
+                    "type": "string"
+                },
+                "entries": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/repo.ValueOverTimeEntry"
+                    }
+                },
+                "start": {
+                    "type": "string"
+                },
+                "valueAtEnd": {
+                    "type": "number"
+                },
+                "valueAtStart": {
+                    "type": "number"
+                }
+            }
+        },
+        "repo.ValueOverTimeEntry": {
+            "type": "object",
+            "properties": {
+                "date": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "number"
                 }
             }
         },
@@ -1891,6 +2222,14 @@ const docTemplate = `{
                 }
             }
         },
+        "v1.EnsureAssetIDResult": {
+            "type": "object",
+            "properties": {
+                "completed": {
+                    "type": "integer"
+                }
+            }
+        },
         "v1.GroupInvitation": {
             "type": "object",
             "properties": {
@@ -1927,6 +2266,9 @@ const docTemplate = `{
         "v1.TokenResponse": {
             "type": "object",
             "properties": {
+                "attachmentToken": {
+                    "type": "string"
+                },
                 "expiresAt": {
                     "type": "string"
                 },

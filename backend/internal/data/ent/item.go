@@ -37,6 +37,8 @@ type Item struct {
 	Insured bool `json:"insured,omitempty"`
 	// Archived holds the value of the "archived" field.
 	Archived bool `json:"archived,omitempty"`
+	// AssetID holds the value of the "asset_id" field.
+	AssetID int `json:"asset_id,omitempty"`
 	// SerialNumber holds the value of the "serial_number" field.
 	SerialNumber string `json:"serial_number,omitempty"`
 	// ModelNumber holds the value of the "model_number" field.
@@ -85,11 +87,13 @@ type ItemEdges struct {
 	Location *Location `json:"location,omitempty"`
 	// Fields holds the value of the fields edge.
 	Fields []*ItemField `json:"fields,omitempty"`
+	// MaintenanceEntries holds the value of the maintenance_entries edge.
+	MaintenanceEntries []*MaintenanceEntry `json:"maintenance_entries,omitempty"`
 	// Attachments holds the value of the attachments edge.
 	Attachments []*Attachment `json:"attachments,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [7]bool
+	loadedTypes [8]bool
 }
 
 // ParentOrErr returns the Parent value or an error if the edge
@@ -158,10 +162,19 @@ func (e ItemEdges) FieldsOrErr() ([]*ItemField, error) {
 	return nil, &NotLoadedError{edge: "fields"}
 }
 
+// MaintenanceEntriesOrErr returns the MaintenanceEntries value or an error if the edge
+// was not loaded in eager-loading.
+func (e ItemEdges) MaintenanceEntriesOrErr() ([]*MaintenanceEntry, error) {
+	if e.loadedTypes[6] {
+		return e.MaintenanceEntries, nil
+	}
+	return nil, &NotLoadedError{edge: "maintenance_entries"}
+}
+
 // AttachmentsOrErr returns the Attachments value or an error if the edge
 // was not loaded in eager-loading.
 func (e ItemEdges) AttachmentsOrErr() ([]*Attachment, error) {
-	if e.loadedTypes[6] {
+	if e.loadedTypes[7] {
 		return e.Attachments, nil
 	}
 	return nil, &NotLoadedError{edge: "attachments"}
@@ -176,7 +189,7 @@ func (*Item) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullBool)
 		case item.FieldPurchasePrice, item.FieldSoldPrice:
 			values[i] = new(sql.NullFloat64)
-		case item.FieldQuantity:
+		case item.FieldQuantity, item.FieldAssetID:
 			values[i] = new(sql.NullInt64)
 		case item.FieldName, item.FieldDescription, item.FieldImportRef, item.FieldNotes, item.FieldSerialNumber, item.FieldModelNumber, item.FieldManufacturer, item.FieldWarrantyDetails, item.FieldPurchaseFrom, item.FieldSoldTo, item.FieldSoldNotes:
 			values[i] = new(sql.NullString)
@@ -264,6 +277,12 @@ func (i *Item) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field archived", values[j])
 			} else if value.Valid {
 				i.Archived = value.Bool
+			}
+		case item.FieldAssetID:
+			if value, ok := values[j].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field asset_id", values[j])
+			} else if value.Valid {
+				i.AssetID = int(value.Int64)
 			}
 		case item.FieldSerialNumber:
 			if value, ok := values[j].(*sql.NullString); !ok {
@@ -399,6 +418,11 @@ func (i *Item) QueryFields() *ItemFieldQuery {
 	return (&ItemClient{config: i.config}).QueryFields(i)
 }
 
+// QueryMaintenanceEntries queries the "maintenance_entries" edge of the Item entity.
+func (i *Item) QueryMaintenanceEntries() *MaintenanceEntryQuery {
+	return (&ItemClient{config: i.config}).QueryMaintenanceEntries(i)
+}
+
 // QueryAttachments queries the "attachments" edge of the Item entity.
 func (i *Item) QueryAttachments() *AttachmentQuery {
 	return (&ItemClient{config: i.config}).QueryAttachments(i)
@@ -453,6 +477,9 @@ func (i *Item) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("archived=")
 	builder.WriteString(fmt.Sprintf("%v", i.Archived))
+	builder.WriteString(", ")
+	builder.WriteString("asset_id=")
+	builder.WriteString(fmt.Sprintf("%v", i.AssetID))
 	builder.WriteString(", ")
 	builder.WriteString("serial_number=")
 	builder.WriteString(i.SerialNumber)

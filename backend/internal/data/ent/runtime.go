@@ -9,13 +9,13 @@ import (
 	"github.com/hay-kot/homebox/backend/internal/data/ent/attachment"
 	"github.com/hay-kot/homebox/backend/internal/data/ent/authtokens"
 	"github.com/hay-kot/homebox/backend/internal/data/ent/document"
-	"github.com/hay-kot/homebox/backend/internal/data/ent/documenttoken"
 	"github.com/hay-kot/homebox/backend/internal/data/ent/group"
 	"github.com/hay-kot/homebox/backend/internal/data/ent/groupinvitationtoken"
 	"github.com/hay-kot/homebox/backend/internal/data/ent/item"
 	"github.com/hay-kot/homebox/backend/internal/data/ent/itemfield"
 	"github.com/hay-kot/homebox/backend/internal/data/ent/label"
 	"github.com/hay-kot/homebox/backend/internal/data/ent/location"
+	"github.com/hay-kot/homebox/backend/internal/data/ent/maintenanceentry"
 	"github.com/hay-kot/homebox/backend/internal/data/ent/schema"
 	"github.com/hay-kot/homebox/backend/internal/data/ent/user"
 )
@@ -43,6 +43,8 @@ func init() {
 	attachmentDescID := attachmentMixinFields0[0].Descriptor()
 	// attachment.DefaultID holds the default value on creation for the id field.
 	attachment.DefaultID = attachmentDescID.Default.(func() uuid.UUID)
+	authrolesFields := schema.AuthRoles{}.Fields()
+	_ = authrolesFields
 	authtokensMixin := schema.AuthTokens{}.Mixin()
 	authtokensMixinFields0 := authtokensMixin[0].Fields()
 	_ = authtokensMixinFields0
@@ -121,37 +123,6 @@ func init() {
 	documentDescID := documentMixinFields0[0].Descriptor()
 	// document.DefaultID holds the default value on creation for the id field.
 	document.DefaultID = documentDescID.Default.(func() uuid.UUID)
-	documenttokenMixin := schema.DocumentToken{}.Mixin()
-	documenttokenMixinFields0 := documenttokenMixin[0].Fields()
-	_ = documenttokenMixinFields0
-	documenttokenFields := schema.DocumentToken{}.Fields()
-	_ = documenttokenFields
-	// documenttokenDescCreatedAt is the schema descriptor for created_at field.
-	documenttokenDescCreatedAt := documenttokenMixinFields0[1].Descriptor()
-	// documenttoken.DefaultCreatedAt holds the default value on creation for the created_at field.
-	documenttoken.DefaultCreatedAt = documenttokenDescCreatedAt.Default.(func() time.Time)
-	// documenttokenDescUpdatedAt is the schema descriptor for updated_at field.
-	documenttokenDescUpdatedAt := documenttokenMixinFields0[2].Descriptor()
-	// documenttoken.DefaultUpdatedAt holds the default value on creation for the updated_at field.
-	documenttoken.DefaultUpdatedAt = documenttokenDescUpdatedAt.Default.(func() time.Time)
-	// documenttoken.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
-	documenttoken.UpdateDefaultUpdatedAt = documenttokenDescUpdatedAt.UpdateDefault.(func() time.Time)
-	// documenttokenDescToken is the schema descriptor for token field.
-	documenttokenDescToken := documenttokenFields[0].Descriptor()
-	// documenttoken.TokenValidator is a validator for the "token" field. It is called by the builders before save.
-	documenttoken.TokenValidator = documenttokenDescToken.Validators[0].(func([]byte) error)
-	// documenttokenDescUses is the schema descriptor for uses field.
-	documenttokenDescUses := documenttokenFields[1].Descriptor()
-	// documenttoken.DefaultUses holds the default value on creation for the uses field.
-	documenttoken.DefaultUses = documenttokenDescUses.Default.(int)
-	// documenttokenDescExpiresAt is the schema descriptor for expires_at field.
-	documenttokenDescExpiresAt := documenttokenFields[2].Descriptor()
-	// documenttoken.DefaultExpiresAt holds the default value on creation for the expires_at field.
-	documenttoken.DefaultExpiresAt = documenttokenDescExpiresAt.Default.(func() time.Time)
-	// documenttokenDescID is the schema descriptor for id field.
-	documenttokenDescID := documenttokenMixinFields0[0].Descriptor()
-	// documenttoken.DefaultID holds the default value on creation for the id field.
-	documenttoken.DefaultID = documenttokenDescID.Default.(func() uuid.UUID)
 	groupMixin := schema.Group{}.Mixin()
 	groupMixinFields0 := groupMixin[0].Fields()
 	_ = groupMixinFields0
@@ -275,36 +246,40 @@ func init() {
 	itemDescArchived := itemFields[4].Descriptor()
 	// item.DefaultArchived holds the default value on creation for the archived field.
 	item.DefaultArchived = itemDescArchived.Default.(bool)
+	// itemDescAssetID is the schema descriptor for asset_id field.
+	itemDescAssetID := itemFields[5].Descriptor()
+	// item.DefaultAssetID holds the default value on creation for the asset_id field.
+	item.DefaultAssetID = itemDescAssetID.Default.(int)
 	// itemDescSerialNumber is the schema descriptor for serial_number field.
-	itemDescSerialNumber := itemFields[5].Descriptor()
+	itemDescSerialNumber := itemFields[6].Descriptor()
 	// item.SerialNumberValidator is a validator for the "serial_number" field. It is called by the builders before save.
 	item.SerialNumberValidator = itemDescSerialNumber.Validators[0].(func(string) error)
 	// itemDescModelNumber is the schema descriptor for model_number field.
-	itemDescModelNumber := itemFields[6].Descriptor()
+	itemDescModelNumber := itemFields[7].Descriptor()
 	// item.ModelNumberValidator is a validator for the "model_number" field. It is called by the builders before save.
 	item.ModelNumberValidator = itemDescModelNumber.Validators[0].(func(string) error)
 	// itemDescManufacturer is the schema descriptor for manufacturer field.
-	itemDescManufacturer := itemFields[7].Descriptor()
+	itemDescManufacturer := itemFields[8].Descriptor()
 	// item.ManufacturerValidator is a validator for the "manufacturer" field. It is called by the builders before save.
 	item.ManufacturerValidator = itemDescManufacturer.Validators[0].(func(string) error)
 	// itemDescLifetimeWarranty is the schema descriptor for lifetime_warranty field.
-	itemDescLifetimeWarranty := itemFields[8].Descriptor()
+	itemDescLifetimeWarranty := itemFields[9].Descriptor()
 	// item.DefaultLifetimeWarranty holds the default value on creation for the lifetime_warranty field.
 	item.DefaultLifetimeWarranty = itemDescLifetimeWarranty.Default.(bool)
 	// itemDescWarrantyDetails is the schema descriptor for warranty_details field.
-	itemDescWarrantyDetails := itemFields[10].Descriptor()
+	itemDescWarrantyDetails := itemFields[11].Descriptor()
 	// item.WarrantyDetailsValidator is a validator for the "warranty_details" field. It is called by the builders before save.
 	item.WarrantyDetailsValidator = itemDescWarrantyDetails.Validators[0].(func(string) error)
 	// itemDescPurchasePrice is the schema descriptor for purchase_price field.
-	itemDescPurchasePrice := itemFields[13].Descriptor()
+	itemDescPurchasePrice := itemFields[14].Descriptor()
 	// item.DefaultPurchasePrice holds the default value on creation for the purchase_price field.
 	item.DefaultPurchasePrice = itemDescPurchasePrice.Default.(float64)
 	// itemDescSoldPrice is the schema descriptor for sold_price field.
-	itemDescSoldPrice := itemFields[16].Descriptor()
+	itemDescSoldPrice := itemFields[17].Descriptor()
 	// item.DefaultSoldPrice holds the default value on creation for the sold_price field.
 	item.DefaultSoldPrice = itemDescSoldPrice.Default.(float64)
 	// itemDescSoldNotes is the schema descriptor for sold_notes field.
-	itemDescSoldNotes := itemFields[17].Descriptor()
+	itemDescSoldNotes := itemFields[18].Descriptor()
 	// item.SoldNotesValidator is a validator for the "sold_notes" field. It is called by the builders before save.
 	item.SoldNotesValidator = itemDescSoldNotes.Validators[0].(func(string) error)
 	// itemDescID is the schema descriptor for id field.
@@ -456,6 +431,55 @@ func init() {
 	locationDescID := locationMixinFields0[0].Descriptor()
 	// location.DefaultID holds the default value on creation for the id field.
 	location.DefaultID = locationDescID.Default.(func() uuid.UUID)
+	maintenanceentryMixin := schema.MaintenanceEntry{}.Mixin()
+	maintenanceentryMixinFields0 := maintenanceentryMixin[0].Fields()
+	_ = maintenanceentryMixinFields0
+	maintenanceentryFields := schema.MaintenanceEntry{}.Fields()
+	_ = maintenanceentryFields
+	// maintenanceentryDescCreatedAt is the schema descriptor for created_at field.
+	maintenanceentryDescCreatedAt := maintenanceentryMixinFields0[1].Descriptor()
+	// maintenanceentry.DefaultCreatedAt holds the default value on creation for the created_at field.
+	maintenanceentry.DefaultCreatedAt = maintenanceentryDescCreatedAt.Default.(func() time.Time)
+	// maintenanceentryDescUpdatedAt is the schema descriptor for updated_at field.
+	maintenanceentryDescUpdatedAt := maintenanceentryMixinFields0[2].Descriptor()
+	// maintenanceentry.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	maintenanceentry.DefaultUpdatedAt = maintenanceentryDescUpdatedAt.Default.(func() time.Time)
+	// maintenanceentry.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	maintenanceentry.UpdateDefaultUpdatedAt = maintenanceentryDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// maintenanceentryDescDate is the schema descriptor for date field.
+	maintenanceentryDescDate := maintenanceentryFields[1].Descriptor()
+	// maintenanceentry.DefaultDate holds the default value on creation for the date field.
+	maintenanceentry.DefaultDate = maintenanceentryDescDate.Default.(func() time.Time)
+	// maintenanceentryDescName is the schema descriptor for name field.
+	maintenanceentryDescName := maintenanceentryFields[2].Descriptor()
+	// maintenanceentry.NameValidator is a validator for the "name" field. It is called by the builders before save.
+	maintenanceentry.NameValidator = func() func(string) error {
+		validators := maintenanceentryDescName.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(name string) error {
+			for _, fn := range fns {
+				if err := fn(name); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// maintenanceentryDescDescription is the schema descriptor for description field.
+	maintenanceentryDescDescription := maintenanceentryFields[3].Descriptor()
+	// maintenanceentry.DescriptionValidator is a validator for the "description" field. It is called by the builders before save.
+	maintenanceentry.DescriptionValidator = maintenanceentryDescDescription.Validators[0].(func(string) error)
+	// maintenanceentryDescCost is the schema descriptor for cost field.
+	maintenanceentryDescCost := maintenanceentryFields[4].Descriptor()
+	// maintenanceentry.DefaultCost holds the default value on creation for the cost field.
+	maintenanceentry.DefaultCost = maintenanceentryDescCost.Default.(float64)
+	// maintenanceentryDescID is the schema descriptor for id field.
+	maintenanceentryDescID := maintenanceentryMixinFields0[0].Descriptor()
+	// maintenanceentry.DefaultID holds the default value on creation for the id field.
+	maintenanceentry.DefaultID = maintenanceentryDescID.Default.(func() uuid.UUID)
 	userMixin := schema.User{}.Mixin()
 	userMixinFields0 := userMixin[0].Fields()
 	_ = userMixinFields0

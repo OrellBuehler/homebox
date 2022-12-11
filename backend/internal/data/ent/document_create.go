@@ -13,7 +13,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/hay-kot/homebox/backend/internal/data/ent/attachment"
 	"github.com/hay-kot/homebox/backend/internal/data/ent/document"
-	"github.com/hay-kot/homebox/backend/internal/data/ent/documenttoken"
 	"github.com/hay-kot/homebox/backend/internal/data/ent/group"
 )
 
@@ -87,21 +86,6 @@ func (dc *DocumentCreate) SetGroupID(id uuid.UUID) *DocumentCreate {
 // SetGroup sets the "group" edge to the Group entity.
 func (dc *DocumentCreate) SetGroup(g *Group) *DocumentCreate {
 	return dc.SetGroupID(g.ID)
-}
-
-// AddDocumentTokenIDs adds the "document_tokens" edge to the DocumentToken entity by IDs.
-func (dc *DocumentCreate) AddDocumentTokenIDs(ids ...uuid.UUID) *DocumentCreate {
-	dc.mutation.AddDocumentTokenIDs(ids...)
-	return dc
-}
-
-// AddDocumentTokens adds the "document_tokens" edges to the DocumentToken entity.
-func (dc *DocumentCreate) AddDocumentTokens(d ...*DocumentToken) *DocumentCreate {
-	ids := make([]uuid.UUID, len(d))
-	for i := range d {
-		ids[i] = d[i].ID
-	}
-	return dc.AddDocumentTokenIDs(ids...)
 }
 
 // AddAttachmentIDs adds the "attachments" edge to the Attachment entity by IDs.
@@ -274,35 +258,19 @@ func (dc *DocumentCreate) createSpec() (*Document, *sqlgraph.CreateSpec) {
 		_spec.ID.Value = &id
 	}
 	if value, ok := dc.mutation.CreatedAt(); ok {
-		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
-			Type:   field.TypeTime,
-			Value:  value,
-			Column: document.FieldCreatedAt,
-		})
+		_spec.SetField(document.FieldCreatedAt, field.TypeTime, value)
 		_node.CreatedAt = value
 	}
 	if value, ok := dc.mutation.UpdatedAt(); ok {
-		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
-			Type:   field.TypeTime,
-			Value:  value,
-			Column: document.FieldUpdatedAt,
-		})
+		_spec.SetField(document.FieldUpdatedAt, field.TypeTime, value)
 		_node.UpdatedAt = value
 	}
 	if value, ok := dc.mutation.Title(); ok {
-		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
-			Type:   field.TypeString,
-			Value:  value,
-			Column: document.FieldTitle,
-		})
+		_spec.SetField(document.FieldTitle, field.TypeString, value)
 		_node.Title = value
 	}
 	if value, ok := dc.mutation.Path(); ok {
-		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
-			Type:   field.TypeString,
-			Value:  value,
-			Column: document.FieldPath,
-		})
+		_spec.SetField(document.FieldPath, field.TypeString, value)
 		_node.Path = value
 	}
 	if nodes := dc.mutation.GroupIDs(); len(nodes) > 0 {
@@ -323,25 +291,6 @@ func (dc *DocumentCreate) createSpec() (*Document, *sqlgraph.CreateSpec) {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_node.group_documents = &nodes[0]
-		_spec.Edges = append(_spec.Edges, edge)
-	}
-	if nodes := dc.mutation.DocumentTokensIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   document.DocumentTokensTable,
-			Columns: []string{document.DocumentTokensColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: documenttoken.FieldID,
-				},
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := dc.mutation.AttachmentsIDs(); len(nodes) > 0 {

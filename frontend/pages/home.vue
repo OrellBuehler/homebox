@@ -22,7 +22,7 @@
   const labels = computed(() => labelsStore.labels);
 
   const { data: statistics } = useAsyncData(async () => {
-    const { data } = await api.group.statistics();
+    const { data } = await api.stats.group();
     return data;
   });
 
@@ -46,7 +46,7 @@
   const importDialog = ref(false);
   const importCsv = ref(null);
   const importLoading = ref(false);
-  const importRef = ref<HTMLInputElement>(null);
+  const importRef = ref<HTMLInputElement>();
   whenever(
     () => !importDialog.value,
     () => {
@@ -100,7 +100,7 @@
 
       <form @submit.prevent="submitCsvFile">
         <div class="flex flex-col gap-2 py-6">
-          <input ref="importRef" type="file" class="hidden" accept=".csv" @change="setFile" />
+          <input ref="importRef" type="file" class="hidden" accept=".csv,.tsv" @change="setFile" />
 
           <BaseButton type="button" @click="uploadCsv">
             <Icon class="h-5 w-5 mr-2" name="mdi-upload" />
@@ -120,7 +120,7 @@
       <section>
         <BaseCard>
           <template #title> Welcome Back, {{ auth.self ? auth.self.name : "Username" }} </template>
-          <template #subtitle> {{ auth.self.isSuperuser ? "Admin" : "User" }} </template>
+          <!-- <template #subtitle> {{ auth.self.isSuperuser ? "Admin" : "User" }} </template> -->
           <template #title-actions>
             <div class="flex justify-end gap-2">
               <div class="tooltip" data-tip="Import CSV File">

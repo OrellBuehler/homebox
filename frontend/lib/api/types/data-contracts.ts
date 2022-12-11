@@ -25,10 +25,12 @@ export interface Group {
 }
 
 export interface GroupStatistics {
+  totalItemPrice: number;
   totalItems: number;
   totalLabels: number;
   totalLocations: number;
   totalUsers: number;
+  totalWithWarranty: number;
 }
 
 export interface GroupUpdate {
@@ -52,7 +54,6 @@ export interface ItemAttachmentUpdate {
 export interface ItemCreate {
   description: string;
   labelIds: string[];
-
   /** Edges */
   locationId: string;
   name: string;
@@ -71,6 +72,8 @@ export interface ItemField {
 
 export interface ItemOut {
   archived: boolean;
+  /** @example "0" */
+  assetId: string;
   attachments: ItemAttachment[];
   children: ItemSummary[];
   createdAt: Date;
@@ -79,33 +82,26 @@ export interface ItemOut {
   id: string;
   insured: boolean;
   labels: LabelSummary[];
-
   /** Warranty */
   lifetimeWarranty: boolean;
-
   /** Edges */
   location: LocationSummary | null;
   manufacturer: string;
   modelNumber: string;
   name: string;
-
   /** Extras */
   notes: string;
   parent: ItemSummary | null;
   purchaseFrom: string;
-
-  /** @example 0 */
+  /** @example "0" */
   purchasePrice: string;
-
   /** Purchase */
   purchaseTime: Date;
   quantity: number;
   serialNumber: string;
   soldNotes: string;
-
-  /** @example 0 */
+  /** @example "0" */
   soldPrice: string;
-
   /** Sold */
   soldTime: Date;
   soldTo: string;
@@ -121,7 +117,6 @@ export interface ItemSummary {
   id: string;
   insured: boolean;
   labels: LabelSummary[];
-
   /** Edges */
   location: LocationSummary | null;
   name: string;
@@ -131,40 +126,33 @@ export interface ItemSummary {
 
 export interface ItemUpdate {
   archived: boolean;
+  assetId: string;
   description: string;
   fields: ItemField[];
   id: string;
   insured: boolean;
   labelIds: string[];
-
   /** Warranty */
   lifetimeWarranty: boolean;
-
   /** Edges */
   locationId: string;
   manufacturer: string;
   modelNumber: string;
   name: string;
-
   /** Extras */
   notes: string;
   parentId: string | null;
   purchaseFrom: string;
-
-  /** @example 0 */
+  /** @example "0" */
   purchasePrice: string;
-
   /** Purchase */
   purchaseTime: Date;
   quantity: number;
-
   /** Identifications */
   serialNumber: string;
   soldNotes: string;
-
-  /** @example 0 */
+  /** @example "0" */
   soldPrice: string;
-
   /** Sold */
   soldTime: Date;
   soldTo: string;
@@ -235,10 +223,48 @@ export interface LocationUpdate {
   parentId: string | null;
 }
 
+export interface MaintenanceEntry {
+  /** @example "0" */
+  cost: string;
+  date: Date;
+  description: string;
+  id: string;
+  name: string;
+}
+
+export interface MaintenanceEntryCreate {
+  /** @example "0" */
+  cost: string;
+  date: Date;
+  description: string;
+  name: string;
+}
+
+export interface MaintenanceEntryUpdate {
+  /** @example "0" */
+  cost: string;
+  date: Date;
+  description: string;
+  name: string;
+}
+
+export interface MaintenanceLog {
+  costAverage: number;
+  costTotal: number;
+  entries: MaintenanceEntry[];
+  itemId: string;
+}
+
 export interface PaginationResultRepoItemSummary {
   items: ItemSummary[];
   page: number;
   pageSize: number;
+  total: number;
+}
+
+export interface TotalsByOrganizer {
+  id: string;
+  name: string;
   total: number;
 }
 
@@ -255,6 +281,20 @@ export interface UserOut {
 export interface UserUpdate {
   email: string;
   name: string;
+}
+
+export interface ValueOverTime {
+  end: string;
+  entries: ValueOverTimeEntry[];
+  start: string;
+  valueAtEnd: number;
+  valueAtStart: number;
+}
+
+export interface ValueOverTimeEntry {
+  date: Date;
+  name: string;
+  value: number;
 }
 
 export interface ServerErrorResponse {
@@ -300,6 +340,10 @@ export interface ChangePassword {
   new: string;
 }
 
+export interface EnsureAssetIDResult {
+  completed: number;
+}
+
 export interface GroupInvitation {
   expiresAt: Date;
   token: string;
@@ -316,6 +360,7 @@ export interface ItemAttachmentToken {
 }
 
 export interface TokenResponse {
+  attachmentToken: string;
   expiresAt: Date;
   token: string;
 }

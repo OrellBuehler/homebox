@@ -120,6 +120,11 @@
       label: "Archived",
       ref: "archived",
     },
+    {
+      type: "text",
+      label: "Asset ID",
+      ref: "assetId",
+    },
   ];
 
   const purchaseFields: FormField[] = [
@@ -209,7 +214,7 @@
       return;
     }
 
-    const { data, error } = await api.items.addAttachment(itemId.value, files[0], files[0].name, type);
+    const { data, error } = await api.items.attachments.add(itemId.value, files[0], files[0].name, type);
 
     if (error) {
       toast.error("Failed to upload attachment");
@@ -230,7 +235,7 @@
       return;
     }
 
-    const { error } = await api.items.deleteAttachment(itemId.value, attachmentId);
+    const { error } = await api.items.attachments.delete(itemId.value, attachmentId);
 
     if (error) {
       toast.error("Failed to delete attachment");
@@ -268,7 +273,7 @@
 
   async function updateAttachment() {
     editState.loading = true;
-    const { error, data } = await api.items.updateAttachment(itemId.value, editState.id, {
+    const { error, data } = await api.items.attachments.update(itemId.value, editState.id, {
       title: editState.title,
       type: editState.type,
     });

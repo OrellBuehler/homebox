@@ -9,14 +9,14 @@ import (
 // Attachment is the predicate function for attachment builders.
 type Attachment func(*sql.Selector)
 
+// AuthRoles is the predicate function for authroles builders.
+type AuthRoles func(*sql.Selector)
+
 // AuthTokens is the predicate function for authtokens builders.
 type AuthTokens func(*sql.Selector)
 
 // Document is the predicate function for document builders.
 type Document func(*sql.Selector)
-
-// DocumentToken is the predicate function for documenttoken builders.
-type DocumentToken func(*sql.Selector)
 
 // Group is the predicate function for group builders.
 type Group func(*sql.Selector)
@@ -35,6 +35,9 @@ type Label func(*sql.Selector)
 
 // Location is the predicate function for location builders.
 type Location func(*sql.Selector)
+
+// MaintenanceEntry is the predicate function for maintenanceentry builders.
+type MaintenanceEntry func(*sql.Selector)
 
 // User is the predicate function for user builders.
 type User func(*sql.Selector)

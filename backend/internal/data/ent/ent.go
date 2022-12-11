@@ -11,15 +11,16 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/hay-kot/homebox/backend/internal/data/ent/attachment"
+	"github.com/hay-kot/homebox/backend/internal/data/ent/authroles"
 	"github.com/hay-kot/homebox/backend/internal/data/ent/authtokens"
 	"github.com/hay-kot/homebox/backend/internal/data/ent/document"
-	"github.com/hay-kot/homebox/backend/internal/data/ent/documenttoken"
 	"github.com/hay-kot/homebox/backend/internal/data/ent/group"
 	"github.com/hay-kot/homebox/backend/internal/data/ent/groupinvitationtoken"
 	"github.com/hay-kot/homebox/backend/internal/data/ent/item"
 	"github.com/hay-kot/homebox/backend/internal/data/ent/itemfield"
 	"github.com/hay-kot/homebox/backend/internal/data/ent/label"
 	"github.com/hay-kot/homebox/backend/internal/data/ent/location"
+	"github.com/hay-kot/homebox/backend/internal/data/ent/maintenanceentry"
 	"github.com/hay-kot/homebox/backend/internal/data/ent/user"
 )
 
@@ -42,15 +43,16 @@ type OrderFunc func(*sql.Selector)
 func columnChecker(table string) func(string) error {
 	checks := map[string]func(string) bool{
 		attachment.Table:           attachment.ValidColumn,
+		authroles.Table:            authroles.ValidColumn,
 		authtokens.Table:           authtokens.ValidColumn,
 		document.Table:             document.ValidColumn,
-		documenttoken.Table:        documenttoken.ValidColumn,
 		group.Table:                group.ValidColumn,
 		groupinvitationtoken.Table: groupinvitationtoken.ValidColumn,
 		item.Table:                 item.ValidColumn,
 		itemfield.Table:            itemfield.ValidColumn,
 		label.Table:                label.ValidColumn,
 		location.Table:             location.ValidColumn,
+		maintenanceentry.Table:     maintenanceentry.ValidColumn,
 		user.Table:                 user.ValidColumn,
 	}
 	check, ok := checks[table]
@@ -283,6 +285,7 @@ func IsConstraintError(err error) bool {
 type selector struct {
 	label string
 	flds  *[]string
+	fns   []AggregateFunc
 	scan  func(context.Context, any) error
 }
 

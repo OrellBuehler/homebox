@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 )
 
-// go:embed all:migrations
+//go:embed all:migrations
 var Files embed.FS
 
 // Write writes the embedded migrations to a temporary directory.
@@ -14,12 +14,11 @@ var Files embed.FS
 // should be called when the migrations are no longer needed.
 func Write(temp string) error {
 	err := os.MkdirAll(temp, 0755)
-
 	if err != nil {
 		return err
 	}
 
-	fsDir, err := Files.ReadDir(".")
+	fsDir, err := Files.ReadDir("migrations")
 	if err != nil {
 		return err
 	}

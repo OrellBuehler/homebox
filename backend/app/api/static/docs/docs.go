@@ -70,10 +70,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/repo.PaginationResult-repo_ItemSummary"
-                        }
+                        "description": "OK"
                     }
                 }
             }
@@ -342,10 +339,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/repo.PaginationResult-repo_ItemSummary"
-                        }
+                        "description": "OK"
                     }
                 }
             },
@@ -1633,9 +1627,13 @@ const docTemplate = `{
                 },
                 "location": {
                     "description": "Edges",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/repo.LocationSummary"
+                        }
+                    ],
                     "x-nullable": true,
-                    "x-omitempty": true,
-                    "$ref": "#/definitions/repo.LocationSummary"
+                    "x-omitempty": true
                 },
                 "manufacturer": {
                     "type": "string"
@@ -1651,9 +1649,13 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "parent": {
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/repo.ItemSummary"
+                        }
+                    ],
                     "x-nullable": true,
-                    "x-omitempty": true,
-                    "$ref": "#/definitions/repo.ItemSummary"
+                    "x-omitempty": true
                 },
                 "purchaseFrom": {
                     "type": "string"
@@ -1723,9 +1725,13 @@ const docTemplate = `{
                 },
                 "location": {
                     "description": "Edges",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/repo.LocationSummary"
+                        }
+                    ],
                     "x-nullable": true,
-                    "x-omitempty": true,
-                    "$ref": "#/definitions/repo.LocationSummary"
+                    "x-omitempty": true
                 },
                 "name": {
                     "type": "string"
@@ -1749,7 +1755,7 @@ const docTemplate = `{
                     "type": "boolean"
                 },
                 "assetId": {
-                    "type": "string"
+                    "type": "integer"
                 },
                 "description": {
                     "type": "string"
@@ -2079,26 +2085,6 @@ const docTemplate = `{
                 },
                 "itemId": {
                     "type": "string"
-                }
-            }
-        },
-        "repo.PaginationResult-repo_ItemSummary": {
-            "type": "object",
-            "properties": {
-                "items": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/repo.ItemSummary"
-                    }
-                },
-                "page": {
-                    "type": "integer"
-                },
-                "pageSize": {
-                    "type": "integer"
-                },
-                "total": {
-                    "type": "integer"
                 }
             }
         },

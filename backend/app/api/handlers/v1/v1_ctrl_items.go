@@ -21,7 +21,7 @@ import (
 // @Param    pageSize  query    int      false "items per page"
 // @Param    labels    query    []string false "label Ids"    collectionFormat(multi)
 // @Param    locations query    []string false "location Ids" collectionFormat(multi)
-// @Success  200       {object} repo.PaginationResult[repo.ItemSummary]{}
+// @Success  200
 // @Router   /v1/items [GET]
 // @Security Bearer
 func (ctrl *V1Controller) HandleItemsGetAll() server.HandlerFunc {

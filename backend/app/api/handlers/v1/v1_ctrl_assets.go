@@ -19,7 +19,7 @@ import (
 // @Tags     Assets
 // @Produce  json
 // @Param    id  path     string true "Asset ID"
-// @Success  200       {object} repo.PaginationResult[repo.ItemSummary]{}
+// @Success  200
 // @Router   /v1/assets/{id} [GET]
 // @Security Bearer
 func (ctrl *V1Controller) HandleAssetGet() server.HandlerFunc {

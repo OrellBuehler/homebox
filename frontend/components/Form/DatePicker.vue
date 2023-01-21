@@ -58,7 +58,7 @@
     }
 
     if (selected.value) {
-      return selected.value.toLocaleDateString('de-CH');
+      return selected.value.toLocaleDateString("de-CH");
     }
 
     return "";

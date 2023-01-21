@@ -45,12 +45,6 @@ export const currencies: Currency[] = [
     name: "Euro",
   },
   {
-    code: "INR",
-    local: "en-IN",
-    symbol: "₹",
-    name: "Indian Rupee",
-  },
-  {
     code: "JPY",
     local: "ja-JP",
     symbol: "¥",

@@ -26,7 +26,7 @@ describe("first time user workflow (register, login, join group)", () => {
 
     expect(response.status).toBe(200);
     expect(group.name).toBeTruthy();
-    expect(group.currency).toBe("USD");
+    expect(group.currency).toBe("CHF");
   });
 
   test("currencies should be in sync with backend", async () => {

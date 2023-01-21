@@ -133,7 +133,8 @@ definitions:
         description: Warranty
         type: boolean
       location:
-        $ref: '#/definitions/repo.LocationSummary'
+        allOf:
+        - $ref: '#/definitions/repo.LocationSummary'
         description: Edges
         x-nullable: true
         x-omitempty: true
@@ -147,7 +148,8 @@ definitions:
         description: Extras
         type: string
       parent:
-        $ref: '#/definitions/repo.ItemSummary'
+        allOf:
+        - $ref: '#/definitions/repo.ItemSummary'
         x-nullable: true
         x-omitempty: true
       purchaseFrom:
@@ -196,7 +198,8 @@ definitions:
           $ref: '#/definitions/repo.LabelSummary'
         type: array
       location:
-        $ref: '#/definitions/repo.LocationSummary'
+        allOf:
+        - $ref: '#/definitions/repo.LocationSummary'
         description: Edges
         x-nullable: true
         x-omitempty: true
@@ -215,7 +218,7 @@ definitions:
       archived:
         type: boolean
       assetId:
-        type: string
+        type: integer
       description:
         type: string
       fields:
@@ -437,19 +440,6 @@ definitions:
       itemId:
         type: string
     type: object
-  repo.PaginationResult-repo_ItemSummary:
-    properties:
-      items:
-        items:
-          $ref: '#/definitions/repo.ItemSummary'
-        type: array
-      page:
-        type: integer
-      pageSize:
-        type: integer
-      total:
-        type: integer
-    type: object
   repo.TotalsByOrganizer:
     properties:
       id:
@@ -646,8 +636,6 @@ paths:
       responses:
         "200":
           description: OK
-          schema:
-            $ref: '#/definitions/repo.PaginationResult-repo_ItemSummary'
       security:
       - Bearer: []
       summary: Gets an item by Asset ID
@@ -811,8 +799,6 @@ paths:
       responses:
         "200":
           description: OK
-          schema:
-            $ref: '#/definitions/repo.PaginationResult-repo_ItemSummary'
       security:
       - Bearer: []
       summary: Get All Items

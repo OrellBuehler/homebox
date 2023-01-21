@@ -6,10 +6,10 @@ import (
 	"strings"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/hay-kot/homebox/backend/internal/core/services"
-	"github.com/hay-kot/homebox/backend/internal/data/repo"
-	"github.com/hay-kot/homebox/backend/internal/sys/validate"
-	"github.com/hay-kot/homebox/backend/pkgs/server"
+	"github.com/thechosenlan/homebox/backend/internal/core/services"
+	"github.com/thechosenlan/homebox/backend/internal/data/repo"
+	"github.com/thechosenlan/homebox/backend/internal/sys/validate"
+	"github.com/thechosenlan/homebox/backend/pkgs/server"
 
 	"github.com/rs/zerolog/log"
 )
@@ -19,7 +19,7 @@ import (
 // @Tags     Assets
 // @Produce  json
 // @Param    id  path     string true "Asset ID"
-// @Success  200       {object} repo.PaginationResult[repo.ItemSummary]{}
+// @Success  200
 // @Router   /v1/assets/{id} [GET]
 // @Security Bearer
 func (ctrl *V1Controller) HandleAssetGet() server.HandlerFunc {
@@ -49,7 +49,6 @@ func (ctrl *V1Controller) HandleAssetGet() server.HandlerFunc {
 				return server.Respond(w, http.StatusBadRequest, "Invalid page size")
 			}
 		}
-		
 
 		items, err := ctrl.repo.Items.QueryByAssetID(r.Context(), ctx.GID, repo.AssetID(assetId), int(page), int(pageSize))
 		if err != nil {

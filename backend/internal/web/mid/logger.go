@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/hay-kot/homebox/backend/pkgs/server"
 	"github.com/rs/zerolog"
+	"github.com/thechosenlan/homebox/backend/pkgs/server"
 )
 
 type statusRecorder struct {

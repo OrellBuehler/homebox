@@ -11,10 +11,6 @@ on:
         type: boolean
         default: false
 
-    secrets:
-      GH_TOKEN:
-        required: true
-
 jobs:
   publish:
     name: "Publish Homebox"
@@ -33,33 +29,36 @@ jobs:
           image: tonistiigi/binfmt:latest
           platforms: all
 
-      - name: install buildx
+      - name: Set up Docker Buildx
         id: buildx
         uses: docker/setup-buildx-action@v2
         with:
           install: true
 
-      - name: login to container registry
-        run: docker login ghcr.io --username hay-kot --password $CR_PAT
-        env:
-          CR_PAT: ${{ secrets.GH_TOKEN }}
+      - name: Log into registry ${{ env.REGISTRY }}
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@28218f9b04b4f3f62068d7b6ce6ca5b26e35336c
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: build nightly the image
+      - name: Build nightly the image
         if: ${{ inputs.release == false }}
         run: |
           docker build --push --no-cache \
-            --tag=ghcr.io/hay-kot/homebox:${{ inputs.tag }} \
+            --tag=ghcr.io/OrellBuehler/homebox:${{ inputs.tag }} \
             --build-arg=COMMIT=$(git rev-parse HEAD) \
             --build-arg=BUILD_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ") \
             --platform=linux/amd64,linux/arm64,linux/arm/v7 .
 
-      - name: build release tagged the image
+      - name: Build release tagged the image
         if: ${{ inputs.release == true }}
         run: |
           docker build --push --no-cache \
-            --tag ghcr.io/hay-kot/homebox:nightly \
-            --tag ghcr.io/hay-kot/homebox:latest \
-            --tag ghcr.io/hay-kot/homebox:${{ inputs.tag }} \
+            --tag ghcr.io/OrellBuehler/homebox:nightly \
+            --tag ghcr.io/OrellBuehler/homebox:latest \
+            --tag ghcr.io/OrellBuehler/homebox:${{ inputs.tag }} \
             --build-arg VERSION=${{ inputs.tag }} \
             --build-arg COMMIT=$(git rev-parse HEAD) \
             --build-arg BUILD_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ") \

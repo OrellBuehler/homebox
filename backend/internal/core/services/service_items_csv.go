@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hay-kot/homebox/backend/internal/data/repo"
+	"github.com/thechosenlan/homebox/backend/internal/data/repo"
 )
 
 func determineSeparator(data []byte) (rune, error) {

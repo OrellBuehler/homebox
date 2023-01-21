@@ -58,7 +58,7 @@
     }
 
     if (selected.value) {
-      return selected.value.toLocaleDateString();
+      return selected.value.toLocaleDateString("de-CH");
     }
 
     return "";
@@ -129,10 +129,14 @@
     for (let i = 1; i <= totalDays; i++) {
       days.push({
         number: i,
-        date: new Date(time.value.getFullYear(), time.value.getMonth(), i),
+        date: getUTCDate(new Date(time.value.getFullYear(), time.value.getMonth(), i)),
       });
     }
 
     return days;
   });
+
+  function getUTCDate(d) {
+    return new Date(d.getTime() - d.getTimezoneOffset() * 60000);
+  }
 </script>

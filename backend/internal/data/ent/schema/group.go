@@ -5,7 +5,7 @@ import (
 	"entgo.io/ent/dialect/entsql"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
-	"github.com/hay-kot/homebox/backend/internal/data/ent/schema/mixins"
+	"github.com/thechosenlan/homebox/backend/internal/data/ent/schema/mixins"
 )
 
 // Group holds the schema definition for the Group entity.
@@ -26,8 +26,8 @@ func (Group) Fields() []ent.Field {
 			MaxLen(255).
 			NotEmpty(),
 		field.Enum("currency").
-			Default("usd").
-			Values("usd", "eur", "gbp", "jpy", "zar", "aud", "nok", "sek", "dkk", "inr", "rmb"),
+			Default("chf").
+			Values("chf", "usd", "eur", "gbp", "jpy", "zar", "aud", "nok", "sek", "dkk", "rmb"),
 	}
 }
 

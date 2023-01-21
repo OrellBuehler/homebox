@@ -5,11 +5,11 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/hay-kot/homebox/backend/internal/core/services"
-	"github.com/hay-kot/homebox/backend/internal/data/repo"
-	"github.com/hay-kot/homebox/backend/internal/sys/validate"
-	"github.com/hay-kot/homebox/backend/pkgs/server"
 	"github.com/rs/zerolog/log"
+	"github.com/thechosenlan/homebox/backend/internal/core/services"
+	"github.com/thechosenlan/homebox/backend/internal/data/repo"
+	"github.com/thechosenlan/homebox/backend/internal/sys/validate"
+	"github.com/thechosenlan/homebox/backend/pkgs/server"
 )
 
 // HandleItemsGetAll godoc
@@ -21,7 +21,7 @@ import (
 // @Param    pageSize  query    int      false "items per page"
 // @Param    labels    query    []string false "label Ids"    collectionFormat(multi)
 // @Param    locations query    []string false "location Ids" collectionFormat(multi)
-// @Success  200       {object} repo.PaginationResult[repo.ItemSummary]{}
+// @Success  200
 // @Router   /v1/items [GET]
 // @Security Bearer
 func (ctrl *V1Controller) HandleItemsGetAll() server.HandlerFunc {

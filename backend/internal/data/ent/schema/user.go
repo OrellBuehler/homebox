@@ -5,7 +5,7 @@ import (
 	"entgo.io/ent/dialect/entsql"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
-	"github.com/hay-kot/homebox/backend/internal/data/ent/schema/mixins"
+	"github.com/thechosenlan/homebox/backend/internal/data/ent/schema/mixins"
 )
 
 // User holds the schema definition for the User entity.

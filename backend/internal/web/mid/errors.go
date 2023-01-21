@@ -3,10 +3,10 @@ package mid
 import (
 	"net/http"
 
-	"github.com/hay-kot/homebox/backend/internal/data/ent"
-	"github.com/hay-kot/homebox/backend/internal/sys/validate"
-	"github.com/hay-kot/homebox/backend/pkgs/server"
 	"github.com/rs/zerolog"
+	"github.com/thechosenlan/homebox/backend/internal/data/ent"
+	"github.com/thechosenlan/homebox/backend/internal/sys/validate"
+	"github.com/thechosenlan/homebox/backend/pkgs/server"
 )
 
 func Errors(log zerolog.Logger) server.Middleware {

@@ -115,11 +115,12 @@ var (
 // Currency defines the type for the "currency" enum field.
 type Currency string
 
-// CurrencyUsd is the default value of the Currency enum.
-const DefaultCurrency = CurrencyUsd
+// CurrencyChf is the default value of the Currency enum.
+const DefaultCurrency = CurrencyChf
 
 // Currency values.
 const (
+	CurrencyChf Currency = "chf"
 	CurrencyUsd Currency = "usd"
 	CurrencyEur Currency = "eur"
 	CurrencyGbp Currency = "gbp"
@@ -129,7 +130,6 @@ const (
 	CurrencyNok Currency = "nok"
 	CurrencySek Currency = "sek"
 	CurrencyDkk Currency = "dkk"
-	CurrencyInr Currency = "inr"
 	CurrencyRmb Currency = "rmb"
 )
 
@@ -140,7 +140,7 @@ func (c Currency) String() string {
 // CurrencyValidator is a validator for the "currency" field enum values. It is called by the builders before save.
 func CurrencyValidator(c Currency) error {
 	switch c {
-	case CurrencyUsd, CurrencyEur, CurrencyGbp, CurrencyJpy, CurrencyZar, CurrencyAud, CurrencyNok, CurrencySek, CurrencyDkk, CurrencyInr, CurrencyRmb:
+	case CurrencyChf, CurrencyUsd, CurrencyEur, CurrencyGbp, CurrencyJpy, CurrencyZar, CurrencyAud, CurrencyNok, CurrencySek, CurrencyDkk, CurrencyRmb:
 		return nil
 	default:
 		return fmt.Errorf("group: invalid enum value for currency field: %q", c)

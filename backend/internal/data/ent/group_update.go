@@ -12,14 +12,14 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/google/uuid"
-	"github.com/hay-kot/homebox/backend/internal/data/ent/document"
-	"github.com/hay-kot/homebox/backend/internal/data/ent/group"
-	"github.com/hay-kot/homebox/backend/internal/data/ent/groupinvitationtoken"
-	"github.com/hay-kot/homebox/backend/internal/data/ent/item"
-	"github.com/hay-kot/homebox/backend/internal/data/ent/label"
-	"github.com/hay-kot/homebox/backend/internal/data/ent/location"
-	"github.com/hay-kot/homebox/backend/internal/data/ent/predicate"
-	"github.com/hay-kot/homebox/backend/internal/data/ent/user"
+	"github.com/thechosenlan/homebox/backend/internal/data/ent/document"
+	"github.com/thechosenlan/homebox/backend/internal/data/ent/group"
+	"github.com/thechosenlan/homebox/backend/internal/data/ent/groupinvitationtoken"
+	"github.com/thechosenlan/homebox/backend/internal/data/ent/item"
+	"github.com/thechosenlan/homebox/backend/internal/data/ent/label"
+	"github.com/thechosenlan/homebox/backend/internal/data/ent/location"
+	"github.com/thechosenlan/homebox/backend/internal/data/ent/predicate"
+	"github.com/thechosenlan/homebox/backend/internal/data/ent/user"
 )
 
 // GroupUpdate is the builder for updating Group entities.

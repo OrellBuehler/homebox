@@ -117,6 +117,14 @@ func (a *app) mountRoutes(repos *repo.AllRepos) {
 	a.server.Put(v1Base("/items/{id}/maintenance/{entry_id}"), v1Ctrl.HandleMaintenanceEntryUpdate(), userMW...)
 	a.server.Delete(v1Base("/items/{id}/maintenance/{entry_id}"), v1Ctrl.HandleMaintenanceEntryDelete(), userMW...)
 
+	a.server.Get(v1Base("/asset/{id}"), v1Ctrl.HandleAssetGet(), userMW...)
+
+	// Asset-Like endpoints
+	a.server.Get(
+		v1Base("/qrcode"),
+		v1Ctrl.HandleGenerateQRCode(),
+		a.mwAuthToken, a.mwRoles(RoleModeOr, authroles.RoleUser.String(), authroles.RoleAttachments.String()),
+	)
 	a.server.Get(
 		v1Base("/items/{id}/attachments/{attachment_id}"),
 		v1Ctrl.HandleItemAttachmentGet(),

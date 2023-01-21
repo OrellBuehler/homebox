@@ -45,6 +45,39 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/assets/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Assets"
+                ],
+                "summary": "Gets an item by Asset ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Asset ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/repo.PaginationResult-repo_ItemSummary"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/groups": {
             "get": {
                 "security": [
@@ -1113,6 +1146,38 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/qrcode": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Items"
+                ],
+                "summary": "Encode data into QRCode",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "data to be encoded into qrcode",
+                        "name": "data",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "image/jpeg",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/status": {
             "get": {
                 "produces": [
@@ -1664,6 +1729,10 @@ const docTemplate = `{
                 },
                 "name": {
                     "type": "string"
+                },
+                "purchasePrice": {
+                    "type": "string",
+                    "example": "0"
                 },
                 "quantity": {
                     "type": "integer"

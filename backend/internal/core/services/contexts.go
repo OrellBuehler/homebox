@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/google/uuid"
-	"github.com/hay-kot/homebox/backend/internal/data/repo"
+	"github.com/thechosenlan/homebox/backend/internal/data/repo"
 )
 
 type contextKeys struct {

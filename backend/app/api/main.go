@@ -9,16 +9,16 @@ import (
 
 	atlas "ariga.io/atlas/sql/migrate"
 	"entgo.io/ent/dialect/sql/schema"
-	"github.com/hay-kot/homebox/backend/app/api/static/docs"
-	"github.com/hay-kot/homebox/backend/internal/core/services"
-	"github.com/hay-kot/homebox/backend/internal/data/ent"
-	"github.com/hay-kot/homebox/backend/internal/data/migrations"
-	"github.com/hay-kot/homebox/backend/internal/data/repo"
-	"github.com/hay-kot/homebox/backend/internal/sys/config"
-	"github.com/hay-kot/homebox/backend/internal/web/mid"
-	"github.com/hay-kot/homebox/backend/pkgs/server"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/rs/zerolog/log"
+	"github.com/thechosenlan/homebox/backend/app/api/static/docs"
+	"github.com/thechosenlan/homebox/backend/internal/core/services"
+	"github.com/thechosenlan/homebox/backend/internal/data/ent"
+	"github.com/thechosenlan/homebox/backend/internal/data/migrations"
+	"github.com/thechosenlan/homebox/backend/internal/data/repo"
+	"github.com/thechosenlan/homebox/backend/internal/sys/config"
+	"github.com/thechosenlan/homebox/backend/internal/web/mid"
+	"github.com/thechosenlan/homebox/backend/pkgs/server"
 )
 
 var (

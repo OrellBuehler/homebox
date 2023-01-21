@@ -6,8 +6,8 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/hay-kot/homebox/backend/internal/sys/validate"
-	"github.com/hay-kot/homebox/backend/pkgs/server"
+	"github.com/thechosenlan/homebox/backend/internal/sys/validate"
+	"github.com/thechosenlan/homebox/backend/pkgs/server"
 	"github.com/yeqown/go-qrcode/v2"
 	"github.com/yeqown/go-qrcode/writer/standard"
 

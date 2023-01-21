@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/hay-kot/homebox/backend/internal/data/repo"
 	"github.com/stretchr/testify/assert"
+	"github.com/thechosenlan/homebox/backend/internal/data/repo"
 )
 
 func TestItemService_AddAttachment(t *testing.T) {

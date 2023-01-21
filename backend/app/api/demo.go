@@ -5,8 +5,8 @@ import (
 	"encoding/csv"
 	"strings"
 
-	"github.com/hay-kot/homebox/backend/internal/core/services"
 	"github.com/rs/zerolog/log"
+	"github.com/thechosenlan/homebox/backend/internal/core/services"
 )
 
 func (a *app) SetupDemo() {

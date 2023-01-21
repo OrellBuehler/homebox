@@ -5,13 +5,13 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/hay-kot/homebox/backend/internal/data/ent"
-	"github.com/hay-kot/homebox/backend/internal/data/ent/group"
-	"github.com/hay-kot/homebox/backend/internal/data/ent/item"
-	"github.com/hay-kot/homebox/backend/internal/data/ent/itemfield"
-	"github.com/hay-kot/homebox/backend/internal/data/ent/label"
-	"github.com/hay-kot/homebox/backend/internal/data/ent/location"
-	"github.com/hay-kot/homebox/backend/internal/data/ent/predicate"
+	"github.com/thechosenlan/homebox/backend/internal/data/ent"
+	"github.com/thechosenlan/homebox/backend/internal/data/ent/group"
+	"github.com/thechosenlan/homebox/backend/internal/data/ent/item"
+	"github.com/thechosenlan/homebox/backend/internal/data/ent/itemfield"
+	"github.com/thechosenlan/homebox/backend/internal/data/ent/label"
+	"github.com/thechosenlan/homebox/backend/internal/data/ent/location"
+	"github.com/thechosenlan/homebox/backend/internal/data/ent/predicate"
 )
 
 type ItemsRepository struct {
@@ -356,7 +356,6 @@ func (e *ItemsRepository) QueryByGroup(ctx context.Context, gid uuid.UUID, q Ite
 
 }
 
-
 // QueryByAssetID returns items by asset ID. If the item does not exist, an error is returned.
 func (e *ItemsRepository) QueryByAssetID(ctx context.Context, gid uuid.UUID, assetID AssetID, page int, pageSize int) (PaginationResult[ItemSummary], error) {
 	qb := e.db.Item.Query().Where(
@@ -372,7 +371,7 @@ func (e *ItemsRepository) QueryByAssetID(ctx context.Context, gid uuid.UUID, ass
 		pageSize = -1
 	}
 
-	items, err :=  mapItemsSummaryErr(
+	items, err := mapItemsSummaryErr(
 		qb.Order(ent.Asc(item.FieldName)).
 			WithLabel().
 			WithLocation().

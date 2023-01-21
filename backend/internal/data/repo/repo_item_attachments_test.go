@@ -5,9 +5,9 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
-	"github.com/hay-kot/homebox/backend/internal/data/ent"
-	"github.com/hay-kot/homebox/backend/internal/data/ent/attachment"
 	"github.com/stretchr/testify/assert"
+	"github.com/thechosenlan/homebox/backend/internal/data/ent"
+	"github.com/thechosenlan/homebox/backend/internal/data/ent/attachment"
 )
 
 func TestAttachmentRepo_Create(t *testing.T) {

@@ -4,9 +4,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/hay-kot/homebox/backend/internal/core/services"
-	"github.com/hay-kot/homebox/backend/internal/sys/validate"
-	"github.com/hay-kot/homebox/backend/pkgs/server"
+	"github.com/thechosenlan/homebox/backend/internal/core/services"
+	"github.com/thechosenlan/homebox/backend/internal/sys/validate"
+	"github.com/thechosenlan/homebox/backend/pkgs/server"
 )
 
 // HandleGroupGet godoc

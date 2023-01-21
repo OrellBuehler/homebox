@@ -1,6 +1,6 @@
 package services
 
-import "github.com/hay-kot/homebox/backend/internal/data/repo"
+import "github.com/thechosenlan/homebox/backend/internal/data/repo"
 
 type AllServices struct {
 	User  *UserService

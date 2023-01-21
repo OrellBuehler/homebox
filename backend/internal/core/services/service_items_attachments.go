@@ -6,10 +6,10 @@ import (
 	"os"
 
 	"github.com/google/uuid"
-	"github.com/hay-kot/homebox/backend/internal/data/ent"
-	"github.com/hay-kot/homebox/backend/internal/data/ent/attachment"
-	"github.com/hay-kot/homebox/backend/internal/data/repo"
 	"github.com/rs/zerolog/log"
+	"github.com/thechosenlan/homebox/backend/internal/data/ent"
+	"github.com/thechosenlan/homebox/backend/internal/data/ent/attachment"
+	"github.com/thechosenlan/homebox/backend/internal/data/repo"
 )
 
 func (svc *ItemService) AttachmentPath(ctx context.Context, attachmentId uuid.UUID) (*ent.Document, error) {

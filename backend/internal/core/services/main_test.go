@@ -8,10 +8,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hay-kot/homebox/backend/internal/data/ent"
-	"github.com/hay-kot/homebox/backend/internal/data/repo"
-	"github.com/hay-kot/homebox/backend/pkgs/faker"
 	_ "github.com/mattn/go-sqlite3"
+	"github.com/thechosenlan/homebox/backend/internal/data/ent"
+	"github.com/thechosenlan/homebox/backend/internal/data/repo"
+	"github.com/thechosenlan/homebox/backend/pkgs/faker"
 )
 
 var (

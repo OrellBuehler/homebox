@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"runtime/debug"
 
-	"github.com/hay-kot/homebox/backend/pkgs/server"
+	"github.com/thechosenlan/homebox/backend/pkgs/server"
 )
 
 // Panic is a middleware that recovers from panics anywhere in the chain and wraps the error.

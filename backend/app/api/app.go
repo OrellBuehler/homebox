@@ -3,12 +3,12 @@ package main
 import (
 	"time"
 
-	"github.com/hay-kot/homebox/backend/internal/core/services"
-	"github.com/hay-kot/homebox/backend/internal/data/ent"
-	"github.com/hay-kot/homebox/backend/internal/data/repo"
-	"github.com/hay-kot/homebox/backend/internal/sys/config"
-	"github.com/hay-kot/homebox/backend/pkgs/mailer"
-	"github.com/hay-kot/homebox/backend/pkgs/server"
+	"github.com/thechosenlan/homebox/backend/internal/core/services"
+	"github.com/thechosenlan/homebox/backend/internal/data/ent"
+	"github.com/thechosenlan/homebox/backend/internal/data/repo"
+	"github.com/thechosenlan/homebox/backend/internal/sys/config"
+	"github.com/thechosenlan/homebox/backend/pkgs/mailer"
+	"github.com/thechosenlan/homebox/backend/pkgs/server"
 )
 
 type app struct {

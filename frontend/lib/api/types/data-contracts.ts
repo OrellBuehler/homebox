@@ -96,7 +96,7 @@ export interface ItemOut {
   /** @example "0" */
   purchasePrice: string;
   /** Purchase */
-  purchaseTime: string;
+  purchaseTime: Date;
   quantity: number;
   serialNumber: string;
   soldNotes: string;
@@ -148,7 +148,7 @@ export interface ItemUpdate {
   /** @example "0" */
   purchasePrice: string;
   /** Purchase */
-  purchaseTime: string;
+  purchaseTime: Date;
   quantity: number;
   /** Identifications */
   serialNumber: string;
@@ -228,7 +228,7 @@ export interface LocationUpdate {
 export interface MaintenanceEntry {
   /** @example "0" */
   cost: string;
-  date: string;
+  date: Date;
   description: string;
   id: string;
   name: string;
@@ -237,7 +237,7 @@ export interface MaintenanceEntry {
 export interface MaintenanceEntryCreate {
   /** @example "0" */
   cost: string;
-  date: string;
+  date: Date;
   description: string;
   name: string;
 }
@@ -245,7 +245,7 @@ export interface MaintenanceEntryCreate {
 export interface MaintenanceEntryUpdate {
   /** @example "0" */
   cost: string;
-  date: string;
+  date: Date;
   description: string;
   name: string;
 }
@@ -255,6 +255,13 @@ export interface MaintenanceLog {
   costTotal: number;
   entries: MaintenanceEntry[];
   itemId: string;
+}
+
+export interface PaginationResultRepoItemSummary {
+  items: ItemSummary[];
+  page: number;
+  pageSize: number;
+  total: number;
 }
 
 export interface TotalsByOrganizer {
@@ -287,7 +294,7 @@ export interface ValueOverTime {
 }
 
 export interface ValueOverTimeEntry {
-  date: string;
+  date: Date;
   name: string;
   value: number;
 }

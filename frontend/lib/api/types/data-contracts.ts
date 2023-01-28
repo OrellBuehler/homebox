@@ -188,6 +188,7 @@ export interface LabelSummary {
 export interface LocationCreate {
   description: string;
   name: string;
+  parentId: string | null;
 }
 
 export interface LocationOut {
@@ -268,6 +269,13 @@ export interface TotalsByOrganizer {
   id: string;
   name: string;
   total: number;
+}
+
+export interface TreeItem {
+  children: TreeItem[];
+  id: string;
+  name: string;
+  type: string;
 }
 
 export interface UserOut {

@@ -1981,6 +1981,7 @@
                     "type": "string"
                 },
                 "warrantyExpires": {
+                    "description": "Sold",
                     "type": "string"
                 }
             }

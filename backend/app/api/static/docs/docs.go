@@ -2411,6 +2411,9 @@ const docTemplate = `{
         "v1.ApiSummary": {
             "type": "object",
             "properties": {
+                "allowRegistration": {
+                    "type": "boolean"
+                },
                 "build": {
                     "$ref": "#/definitions/v1.Build"
                 },

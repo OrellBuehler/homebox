@@ -393,10 +393,11 @@ definitions:
     type: object
   repo.MaintenanceEntry:
     properties:
+      completedDate:
+        description: Sold
+        type: string
       cost:
         example: "0"
-        type: string
-      date:
         type: string
       description:
         type: string
@@ -404,29 +405,40 @@ definitions:
         type: string
       name:
         type: string
+      scheduledDate:
+        description: Sold
+        type: string
     type: object
   repo.MaintenanceEntryCreate:
     properties:
+      completedDate:
+        description: Sold
+        type: string
       cost:
         example: "0"
-        type: string
-      date:
         type: string
       description:
         type: string
       name:
+        type: string
+      scheduledDate:
+        description: Sold
         type: string
     type: object
   repo.MaintenanceEntryUpdate:
     properties:
+      completedDate:
+        description: Sold
+        type: string
       cost:
         example: "0"
-        type: string
-      date:
         type: string
       description:
         type: string
       name:
+        type: string
+      scheduledDate:
+        description: Sold
         type: string
     type: object
   repo.MaintenanceLog:

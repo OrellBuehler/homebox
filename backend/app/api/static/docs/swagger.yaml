@@ -77,7 +77,6 @@ definitions:
     properties:
       description:
         maxLength: 1000
-        minLength: 1
         type: string
       labelIds:
         items:
@@ -94,7 +93,6 @@ definitions:
         type: string
         x-nullable: true
     required:
-    - description
     - name
     type: object
   repo.ItemField:
@@ -445,6 +443,8 @@ definitions:
       scheduledDate:
         description: Sold
         type: string
+    required:
+    - name
     type: object
   repo.MaintenanceEntryUpdate:
     properties:
@@ -1257,14 +1257,9 @@ paths:
         "200":
           description: OK
           schema:
-            allOf:
-            - $ref: '#/definitions/v1.Wrapped'
-            - properties:
-                items:
-                  items:
-                    $ref: '#/definitions/repo.LabelOut'
-                  type: array
-              type: object
+            items:
+              $ref: '#/definitions/repo.LabelOut'
+            type: array
       security:
       - Bearer: []
       summary: Get All Labels
@@ -1359,14 +1354,9 @@ paths:
         "200":
           description: OK
           schema:
-            allOf:
-            - $ref: '#/definitions/v1.Wrapped'
-            - properties:
-                items:
-                  items:
-                    $ref: '#/definitions/repo.LocationOutCount'
-                  type: array
-              type: object
+            items:
+              $ref: '#/definitions/repo.LocationOutCount'
+            type: array
       security:
       - Bearer: []
       summary: Get All Locations
@@ -1467,14 +1457,9 @@ paths:
         "200":
           description: OK
           schema:
-            allOf:
-            - $ref: '#/definitions/v1.Wrapped'
-            - properties:
-                items:
-                  items:
-                    $ref: '#/definitions/repo.TreeItem'
-                  type: array
-              type: object
+            items:
+              $ref: '#/definitions/repo.TreeItem'
+            type: array
       security:
       - Bearer: []
       summary: Get Locations Tree
@@ -1488,14 +1473,9 @@ paths:
         "200":
           description: OK
           schema:
-            allOf:
-            - $ref: '#/definitions/v1.Wrapped'
-            - properties:
-                items:
-                  items:
-                    $ref: '#/definitions/repo.NotifierOut'
-                  type: array
-              type: object
+            items:
+              $ref: '#/definitions/repo.NotifierOut'
+            type: array
       security:
       - Bearer: []
       summary: Get Notifiers

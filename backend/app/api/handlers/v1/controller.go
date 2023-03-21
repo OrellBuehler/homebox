@@ -9,6 +9,14 @@ import (
 	"github.com/thechosenlan/safeserve/server"
 )
 
+type Results[T any] struct {
+	Items []T `json:"items"`
+}
+
+func WrapResults[T any](items []T) Results[T] {
+	return Results[T]{Items: items}
+}
+
 type Wrapped struct {
 	Item interface{} `json:"item"`
 }

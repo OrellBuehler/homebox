@@ -145,6 +145,7 @@ const (
 	CurrencyPln Currency = "pln"
 	CurrencyTry Currency = "try"
 	CurrencyRon Currency = "ron"
+	CurrencyCzk Currency = "czk"
 )
 
 func (c Currency) String() string {

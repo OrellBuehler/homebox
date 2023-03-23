@@ -22,10 +22,11 @@ import (
 	"github.com/thechosenlan/homebox/backend/internal/web/mid"
 	"github.com/thechosenlan/safeserve/errchain"
 	"github.com/thechosenlan/safeserve/server"
-	_ "github.com/mattn/go-sqlite3"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/rs/zerolog/pkgerrors"
+
+	_ "github.com/thechosenlan/homebox/backend/pkgs/cgofreesqlite"
 )
 
 var (

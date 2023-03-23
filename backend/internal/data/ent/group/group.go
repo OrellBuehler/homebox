@@ -137,6 +137,7 @@ const (
 	CurrencyZar Currency = "zar"
 	CurrencyAud Currency = "aud"
 	CurrencyNok Currency = "nok"
+	CurrencyNzd Currency = "nzd"
 	CurrencySek Currency = "sek"
 	CurrencyDkk Currency = "dkk"
 	CurrencyRmb Currency = "rmb"

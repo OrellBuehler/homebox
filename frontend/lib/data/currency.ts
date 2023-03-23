@@ -12,6 +12,7 @@ export type Codes =
   | "INR"
   | "JPY"
   | "NOK"
+  | "NZD"
   | "PLN"
   | "RMB"
   | "RON"

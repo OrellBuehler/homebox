@@ -1569,6 +1569,15 @@ const docTemplate = `{
                         "description": "string",
                         "name": "password",
                         "in": "formData"
+                    },
+                    {
+                        "description": "Login Data",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.LoginForm"
+                        }
                     }
                 ],
                 "responses": {
@@ -2763,6 +2772,20 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "token": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.LoginForm": {
+            "type": "object",
+            "properties": {
+                "password": {
+                    "type": "string"
+                },
+                "stayLoggedIn": {
+                    "type": "boolean"
+                },
+                "username": {
                     "type": "string"
                 }
             }

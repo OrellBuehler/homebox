@@ -2828,7 +2828,7 @@ var SwaggerInfo = &swag.Spec{
 	BasePath:         "/api",
 	Schemes:          []string{},
 	Title:            "Homebox API",
-	Description:      "Track, Manage, and Organize your Shit.",
+	Description:      "Track, Manage, and Organize your Things.",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 }

@@ -13,7 +13,6 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 
-	"github.com/thechosenlan/homebox/backend/app/api/static/docs"
 	"github.com/thechosenlan/homebox/backend/internal/core/services"
 	"github.com/thechosenlan/homebox/backend/internal/data/ent"
 	"github.com/thechosenlan/homebox/backend/internal/data/migrations"
@@ -39,7 +38,6 @@ var (
 // @version                    1.0
 // @description                Track, Manage, and Organize your Things.
 // @contact.name               Don't
-// @license.name               MIT
 // @BasePath                   /api
 // @securityDefinitions.apikey Bearer
 // @in                         header
@@ -52,8 +50,6 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-
-	docs.SwaggerInfo.Host = cfg.Swagger.Host
 
 	if err := run(cfg); err != nil {
 		panic(err)

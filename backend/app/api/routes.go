@@ -15,7 +15,7 @@ import (
 	_ "github.com/thechosenlan/homebox/backend/app/api/static/docs"
 	"github.com/thechosenlan/homebox/backend/internal/data/ent/authroles"
 	"github.com/thechosenlan/homebox/backend/internal/data/repo"
-	"github.com/thechosenlan/safeserve/errchain"
+	"github.com/thechosenlan/httpkit/errchain"
 	httpSwagger "github.com/swaggo/http-swagger" // http-swagger middleware
 )
 

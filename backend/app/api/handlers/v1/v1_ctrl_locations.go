@@ -7,7 +7,7 @@ import (
 	"github.com/thechosenlan/homebox/backend/internal/core/services"
 	"github.com/thechosenlan/homebox/backend/internal/data/repo"
 	"github.com/thechosenlan/homebox/backend/internal/web/adapters"
-	"github.com/thechosenlan/safeserve/errchain"
+	"github.com/thechosenlan/httpkit/errchain"
 )
 
 // HandleLocationTreeQuery

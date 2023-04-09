@@ -8,9 +8,14 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/hay-kot/homebox/backend/internal/data/ent"
 	"github.com/hay-kot/homebox/backend/internal/sys/validate"
+<<<<<<< HEAD
 	"github.com/hay-kot/safeserve/errchain"
 	"github.com/hay-kot/safeserve/server"
 >>>>>>> db80f8a (chore: refactor api endpoints (#339))
+=======
+	"github.com/hay-kot/httpkit/errchain"
+	"github.com/hay-kot/httpkit/server"
+>>>>>>> 64b3ac3 (change safeserve -> httpkit (#405))
 	"github.com/rs/zerolog"
 	"github.com/thechosenlan/homebox/backend/internal/data/ent"
 	"github.com/thechosenlan/homebox/backend/internal/sys/validate"

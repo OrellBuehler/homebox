@@ -5,8 +5,8 @@ import (
 
 	"github.com/thechosenlan/homebox/backend/internal/core/services"
 	"github.com/thechosenlan/homebox/backend/internal/data/repo"
-	"github.com/thechosenlan/safeserve/errchain"
-	"github.com/thechosenlan/safeserve/server"
+	"github.com/thechosenlan/httpkit/errchain"
+	"github.com/thechosenlan/httpkit/server"
 )
 
 type Results[T any] struct {

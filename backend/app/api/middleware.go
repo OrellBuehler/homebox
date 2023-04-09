@@ -9,7 +9,7 @@ import (
 
 	"github.com/thechosenlan/homebox/backend/internal/core/services"
 	"github.com/thechosenlan/homebox/backend/internal/sys/validate"
-	"github.com/thechosenlan/safeserve/errchain"
+	"github.com/thechosenlan/httpkit/errchain"
 )
 
 type tokenHasKey struct {

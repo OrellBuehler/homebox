@@ -8,8 +8,8 @@ import (
 	"github.com/thechosenlan/homebox/backend/internal/data/ent/attachment"
 	"github.com/thechosenlan/homebox/backend/internal/data/repo"
 	"github.com/thechosenlan/homebox/backend/internal/sys/validate"
-	"github.com/thechosenlan/safeserve/errchain"
-	"github.com/thechosenlan/safeserve/server"
+	"github.com/thechosenlan/httpkit/errchain"
+	"github.com/thechosenlan/httpkit/server"
 	"github.com/rs/zerolog/log"
 )
 

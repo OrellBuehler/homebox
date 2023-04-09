@@ -7,7 +7,7 @@ import (
 	"net/http"
 
 	"github.com/thechosenlan/homebox/backend/internal/web/adapters"
-	"github.com/thechosenlan/safeserve/errchain"
+	"github.com/thechosenlan/httpkit/errchain"
 	"github.com/yeqown/go-qrcode/v2"
 	"github.com/yeqown/go-qrcode/writer/standard"
 

@@ -8,7 +8,7 @@ import (
 	"github.com/thechosenlan/homebox/backend/internal/data/repo"
 	"github.com/thechosenlan/homebox/backend/internal/sys/config"
 	"github.com/thechosenlan/homebox/backend/pkgs/mailer"
-	"github.com/thechosenlan/safeserve/server"
+	"github.com/thechosenlan/httpkit/server"
 )
 
 type app struct {

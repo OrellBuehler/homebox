@@ -1,26 +1,4 @@
-<<<<<<< HEAD
 export type Codes = "CHF" | "USD" | "EUR" | "GBP" | "JPY" | "ZAR" | "AUD" | "NOK" | "SEK" | "DKK" | "INR" | "RMB" | "BGN";
-=======
-export type Codes =
-  | "AUD"
-  | "BGN"
-  | "CHF"
-  | "CZK"
-  | "DKK"
-  | "EUR"
-  | "GBP"
-  | "INR"
-  | "JPY"
-  | "NOK"
-  | "NZD"
-  | "PLN"
-  | "RMB"
-  | "RON"
-  | "SEK"
-  | "TRY"
-  | "USD"
-  | "ZAR";
->>>>>>> dc08dbb (feat: add czech currency (#323))
 
 export type Currency = {
   code: Codes;

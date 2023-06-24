@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hay-kot/homebox/backend/internal/data/types"
+	"github.com/thechosenlan/homebox/backend/internal/data/types"
 	"github.com/stretchr/testify/assert"
 )
 

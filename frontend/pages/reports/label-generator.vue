@@ -306,7 +306,7 @@
       </p>
       <p>
         This feature is in early development stages and may change in future releases, if you have feedback please
-        provide it in the <a href="https://github.com/hay-kot/homebox/discussions/273">GitHub Discussion</a>
+        provide it in the <a href="https://github.com/thechosenlan/homebox/discussions/273">GitHub Discussion</a>
       </p>
       <h2>Tips</h2>
       <ul>

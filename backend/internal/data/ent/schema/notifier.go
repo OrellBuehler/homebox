@@ -5,7 +5,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
 
-	"github.com/hay-kot/homebox/backend/internal/data/ent/schema/mixins"
+	"github.com/thechosenlan/homebox/backend/internal/data/ent/schema/mixins"
 )
 
 type Notifier struct {

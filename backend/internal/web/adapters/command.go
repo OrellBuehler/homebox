@@ -4,8 +4,8 @@ import (
 	"net/http"
 
 	"github.com/google/uuid"
-	"github.com/hay-kot/httpkit/errchain"
-	"github.com/hay-kot/httpkit/server"
+	"github.com/thechosenlan/httpkit/errchain"
+	"github.com/thechosenlan/httpkit/server"
 )
 
 type CommandFunc[T any] func(*http.Request) (T, error)

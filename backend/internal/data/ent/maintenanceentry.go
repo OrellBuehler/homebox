@@ -9,8 +9,8 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"github.com/google/uuid"
-	"github.com/hay-kot/homebox/backend/internal/data/ent/item"
-	"github.com/hay-kot/homebox/backend/internal/data/ent/maintenanceentry"
+	"github.com/thechosenlan/homebox/backend/internal/data/ent/item"
+	"github.com/thechosenlan/homebox/backend/internal/data/ent/maintenanceentry"
 )
 
 // MaintenanceEntry is the model entity for the MaintenanceEntry schema.

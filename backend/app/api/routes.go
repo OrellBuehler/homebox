@@ -10,12 +10,12 @@ import (
 	"path/filepath"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/hay-kot/homebox/backend/app/api/handlers/debughandlers"
-	v1 "github.com/hay-kot/homebox/backend/app/api/handlers/v1"
-	_ "github.com/hay-kot/homebox/backend/app/api/static/docs"
-	"github.com/hay-kot/homebox/backend/internal/data/ent/authroles"
-	"github.com/hay-kot/homebox/backend/internal/data/repo"
-	"github.com/hay-kot/httpkit/errchain"
+	"github.com/thechosenlan/homebox/backend/app/api/handlers/debughandlers"
+	v1 "github.com/thechosenlan/homebox/backend/app/api/handlers/v1"
+	_ "github.com/thechosenlan/homebox/backend/app/api/static/docs"
+	"github.com/thechosenlan/homebox/backend/internal/data/ent/authroles"
+	"github.com/thechosenlan/homebox/backend/internal/data/repo"
+	"github.com/thechosenlan/httpkit/errchain"
 	httpSwagger "github.com/swaggo/http-swagger" // http-swagger middleware
 )
 

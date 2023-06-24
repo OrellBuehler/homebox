@@ -12,10 +12,10 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/google/uuid"
-	"github.com/hay-kot/homebox/backend/internal/data/ent/attachment"
-	"github.com/hay-kot/homebox/backend/internal/data/ent/document"
-	"github.com/hay-kot/homebox/backend/internal/data/ent/group"
-	"github.com/hay-kot/homebox/backend/internal/data/ent/predicate"
+	"github.com/thechosenlan/homebox/backend/internal/data/ent/attachment"
+	"github.com/thechosenlan/homebox/backend/internal/data/ent/document"
+	"github.com/thechosenlan/homebox/backend/internal/data/ent/group"
+	"github.com/thechosenlan/homebox/backend/internal/data/ent/predicate"
 )
 
 // DocumentQuery is the builder for querying Document entities.

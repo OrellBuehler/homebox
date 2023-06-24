@@ -4,7 +4,7 @@ import (
 	"context"
 	"strings"
 
-	"github.com/hay-kot/homebox/backend/internal/core/services"
+	"github.com/thechosenlan/homebox/backend/internal/core/services"
 	"github.com/rs/zerolog/log"
 )
 

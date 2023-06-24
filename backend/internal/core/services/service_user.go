@@ -6,9 +6,9 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/hay-kot/homebox/backend/internal/data/ent/authroles"
-	"github.com/hay-kot/homebox/backend/internal/data/repo"
-	"github.com/hay-kot/homebox/backend/pkgs/hasher"
+	"github.com/thechosenlan/homebox/backend/internal/data/ent/authroles"
+	"github.com/thechosenlan/homebox/backend/internal/data/repo"
+	"github.com/thechosenlan/homebox/backend/pkgs/hasher"
 	"github.com/rs/zerolog/log"
 )
 

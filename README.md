@@ -4,7 +4,7 @@
 
 <h1 align="center" style="margin-top: -10px"> HomeBox </h1>
 <p align="center" style="width: 100;">
-   <a href="https://hay-kot.github.io/homebox/">Docs</a>
+   <a href="https://thechosenlan.github.io/homebox/">Docs</a>
    |
    <a href="https://homebox.fly.dev">Demo</a>
    |
@@ -13,7 +13,7 @@
 
 ## Quick Start
 
-[Configuration & Docker Compose](https://hay-kot.github.io/homebox/quick-start)
+[Configuration & Docker Compose](https://thechosenlan.github.io/homebox/quick-start)
 
 ```bash
 # If using the rootless image, ensure data 
@@ -26,8 +26,8 @@ docker run -d \
   --publish 3100:7745 \
   --env TZ=Europe/Bucharest \
   --volume /path/to/data/folder/:/data \
-  ghcr.io/hay-kot/homebox:latest
-# ghcr.io/hay-kot/homebox:latest-rootless
+  ghcr.io/thechosenlan/homebox:latest
+# ghcr.io/thechosenlan/homebox:latest-rootless
 ```
 
 ## Credits

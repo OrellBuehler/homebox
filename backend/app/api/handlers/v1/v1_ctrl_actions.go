@@ -5,10 +5,10 @@ import (
 	"net/http"
 
 	"github.com/google/uuid"
-	"github.com/hay-kot/homebox/backend/internal/core/services"
-	"github.com/hay-kot/homebox/backend/internal/sys/validate"
-	"github.com/hay-kot/httpkit/errchain"
-	"github.com/hay-kot/httpkit/server"
+	"github.com/thechosenlan/homebox/backend/internal/core/services"
+	"github.com/thechosenlan/homebox/backend/internal/sys/validate"
+	"github.com/thechosenlan/httpkit/errchain"
+	"github.com/thechosenlan/httpkit/server"
 	"github.com/rs/zerolog/log"
 )
 

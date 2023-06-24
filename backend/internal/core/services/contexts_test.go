@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
-	"github.com/hay-kot/homebox/backend/internal/data/repo"
+	"github.com/thechosenlan/homebox/backend/internal/data/repo"
 	"github.com/stretchr/testify/assert"
 )
 

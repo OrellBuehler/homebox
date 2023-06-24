@@ -8,8 +8,8 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/gorilla/schema"
-	"github.com/hay-kot/homebox/backend/internal/sys/validate"
-	"github.com/hay-kot/httpkit/server"
+	"github.com/thechosenlan/homebox/backend/internal/sys/validate"
+	"github.com/thechosenlan/httpkit/server"
 )
 
 var queryDecoder = schema.NewDecoder()

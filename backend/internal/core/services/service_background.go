@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/containrrr/shoutrrr"
-	"github.com/hay-kot/homebox/backend/internal/data/repo"
-	"github.com/hay-kot/homebox/backend/internal/data/types"
+	"github.com/thechosenlan/homebox/backend/internal/data/repo"
+	"github.com/thechosenlan/homebox/backend/internal/data/types"
 	"github.com/rs/zerolog/log"
 )
 

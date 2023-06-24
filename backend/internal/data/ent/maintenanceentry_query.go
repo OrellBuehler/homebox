@@ -11,9 +11,9 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/google/uuid"
-	"github.com/hay-kot/homebox/backend/internal/data/ent/item"
-	"github.com/hay-kot/homebox/backend/internal/data/ent/maintenanceentry"
-	"github.com/hay-kot/homebox/backend/internal/data/ent/predicate"
+	"github.com/thechosenlan/homebox/backend/internal/data/ent/item"
+	"github.com/thechosenlan/homebox/backend/internal/data/ent/maintenanceentry"
+	"github.com/thechosenlan/homebox/backend/internal/data/ent/predicate"
 )
 
 // MaintenanceEntryQuery is the builder for querying MaintenanceEntry entities.

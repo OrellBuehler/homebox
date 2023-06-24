@@ -135,7 +135,7 @@
           <p class="ml-1 text-lg text-base-content/50">Track, Organize, and Manage your Things.</p>
         </div>
         <div class="flex mt-6 sm:mt-0 gap-4 ml-auto text-neutral-content">
-          <a class="tooltip" data-tip="Project Github" href="https://github.com/hay-kot/homebox" target="_blank">
+          <a class="tooltip" data-tip="Project Github" href="https://github.com/thechosenlan/homebox" target="_blank">
             <Icon name="mdi-github" class="h-8 w-8" />
           </a>
           <a href="https://twitter.com/haybytes" class="tooltip" data-tip="Follow The Developer" target="_blank">
@@ -144,7 +144,7 @@
           <a href="https://discord.gg/tuncmNrE4z" class="tooltip" data-tip="Join The Discord" target="_blank">
             <Icon name="mdi-discord" class="h-8 w-8" />
           </a>
-          <a href="https://hay-kot.github.io/homebox/" class="tooltip" data-tip="Read The Docs" target="_blank">
+          <a href="https://thechosenlan.github.io/homebox/" class="tooltip" data-tip="Read The Docs" target="_blank">
             <Icon name="mdi-folder" class="h-8 w-8" />
           </a>
         </div>

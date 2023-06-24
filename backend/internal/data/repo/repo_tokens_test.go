@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hay-kot/homebox/backend/pkgs/hasher"
+	"github.com/thechosenlan/homebox/backend/pkgs/hasher"
 	"github.com/stretchr/testify/assert"
 )
 

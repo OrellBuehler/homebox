@@ -19,8 +19,8 @@ $ docker run -d \
   --publish 3100:7745 \
   --env TZ=Europe/Bucharest \
   --volume /path/to/data/folder/:/data \
-  ghcr.io/hay-kot/homebox:latest
-# ghcr.io/hay-kot/homebox:latest-rootless
+  ghcr.io/thechosenlan/homebox:latest
+# ghcr.io/thechosenlan/homebox:latest-rootless
  
 ```
 
@@ -31,8 +31,8 @@ version: "3.4"
 
 services:
   homebox:
-    image: ghcr.io/hay-kot/homebox:latest
-#   image: ghcr.io/hay-kot/homebox:latest-rootless
+    image: ghcr.io/thechosenlan/homebox:latest
+#   image: ghcr.io/thechosenlan/homebox:latest-rootless
     container_name: homebox
     restart: always
     environment:

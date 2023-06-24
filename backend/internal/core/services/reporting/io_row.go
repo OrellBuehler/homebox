@@ -3,8 +3,8 @@ package reporting
 import (
 	"strings"
 
-	"github.com/hay-kot/homebox/backend/internal/data/repo"
-	"github.com/hay-kot/homebox/backend/internal/data/types"
+	"github.com/thechosenlan/homebox/backend/internal/data/repo"
+	"github.com/thechosenlan/homebox/backend/internal/data/types"
 )
 
 type ExportItemFields struct {

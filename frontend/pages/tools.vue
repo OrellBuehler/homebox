@@ -78,7 +78,7 @@
             Resets the time value for all date time fields in your inventory to the beginning of the date. This is to
             fix a bug that was introduced early on in the development of the site that caused the time value to be
             stored with the time which caused issues with date fields displaying accurate values.
-            <a class="link" href="https://github.com/hay-kot/homebox/issues/236" target="_blank">
+            <a class="link" href="https://github.com/thechosenlan/homebox/issues/236" target="_blank">
               See Github Issue #236 for more details.
             </a>
           </DetailAction>

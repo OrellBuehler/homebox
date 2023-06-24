@@ -6,8 +6,8 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/hay-kot/homebox/backend/internal/web/adapters"
-	"github.com/hay-kot/httpkit/errchain"
+	"github.com/thechosenlan/homebox/backend/internal/web/adapters"
+	"github.com/thechosenlan/httpkit/errchain"
 	"github.com/yeqown/go-qrcode/v2"
 	"github.com/yeqown/go-qrcode/writer/standard"
 

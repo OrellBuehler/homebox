@@ -7,9 +7,9 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/hay-kot/homebox/backend/internal/core/services"
-	"github.com/hay-kot/homebox/backend/internal/sys/validate"
-	"github.com/hay-kot/httpkit/errchain"
+	"github.com/thechosenlan/homebox/backend/internal/core/services"
+	"github.com/thechosenlan/homebox/backend/internal/sys/validate"
+	"github.com/thechosenlan/httpkit/errchain"
 )
 
 type tokenHasKey struct {

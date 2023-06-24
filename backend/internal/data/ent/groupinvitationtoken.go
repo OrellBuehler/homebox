@@ -9,8 +9,8 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"github.com/google/uuid"
-	"github.com/hay-kot/homebox/backend/internal/data/ent/group"
-	"github.com/hay-kot/homebox/backend/internal/data/ent/groupinvitationtoken"
+	"github.com/thechosenlan/homebox/backend/internal/data/ent/group"
+	"github.com/thechosenlan/homebox/backend/internal/data/ent/groupinvitationtoken"
 )
 
 // GroupInvitationToken is the model entity for the GroupInvitationToken schema.

@@ -3,10 +3,10 @@ package v1
 import (
 	"net/http"
 
-	"github.com/hay-kot/homebox/backend/internal/core/services"
-	"github.com/hay-kot/homebox/backend/internal/data/repo"
-	"github.com/hay-kot/httpkit/errchain"
-	"github.com/hay-kot/httpkit/server"
+	"github.com/thechosenlan/homebox/backend/internal/core/services"
+	"github.com/thechosenlan/homebox/backend/internal/data/repo"
+	"github.com/thechosenlan/httpkit/errchain"
+	"github.com/thechosenlan/httpkit/server"
 )
 
 type Results[T any] struct {

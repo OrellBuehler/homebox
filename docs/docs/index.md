@@ -6,7 +6,7 @@
   <br>
 </h1>
 <p align="center" style="width: 100; margin-top: -30px;">
-   <a href="https://hay-kot.github.io/homebox/">Docs</a>
+   <a href="https://thechosenlan.github.io/homebox/">Docs</a>
    |
    <a href="https://homebox.fly.dev">Demo</a>
    |

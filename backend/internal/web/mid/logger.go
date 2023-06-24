@@ -3,10 +3,7 @@ package mid
 import (
 	"net/http"
 
-<<<<<<< HEAD
-=======
 	"github.com/go-chi/chi/v5/middleware"
->>>>>>> db80f8a (chore: refactor api endpoints (#339))
 	"github.com/rs/zerolog"
 	"github.com/thechosenlan/homebox/backend/pkgs/server"
 )

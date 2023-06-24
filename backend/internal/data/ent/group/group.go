@@ -34,6 +34,8 @@ const (
 	EdgeDocuments = "documents"
 	// EdgeInvitationTokens holds the string denoting the invitation_tokens edge name in mutations.
 	EdgeInvitationTokens = "invitation_tokens"
+	// EdgeNotifiers holds the string denoting the notifiers edge name in mutations.
+	EdgeNotifiers = "notifiers"
 	// Table holds the table name of the group in the database.
 	Table = "groups"
 	// UsersTable is the table that holds the users relation/edge.
@@ -78,6 +80,13 @@ const (
 	InvitationTokensInverseTable = "group_invitation_tokens"
 	// InvitationTokensColumn is the table column denoting the invitation_tokens relation/edge.
 	InvitationTokensColumn = "group_invitation_tokens"
+	// NotifiersTable is the table that holds the notifiers relation/edge.
+	NotifiersTable = "notifiers"
+	// NotifiersInverseTable is the table name for the Notifier entity.
+	// It exists in this package in order to avoid circular dependency with the "notifier" package.
+	NotifiersInverseTable = "notifiers"
+	// NotifiersColumn is the table column denoting the notifiers relation/edge.
+	NotifiersColumn = "group_id"
 )
 
 // Columns holds all SQL columns for group fields.
@@ -128,9 +137,16 @@ const (
 	CurrencyZar Currency = "zar"
 	CurrencyAud Currency = "aud"
 	CurrencyNok Currency = "nok"
+	CurrencyNzd Currency = "nzd"
 	CurrencySek Currency = "sek"
 	CurrencyDkk Currency = "dkk"
 	CurrencyRmb Currency = "rmb"
+	CurrencyBgn Currency = "bgn"
+	CurrencyChf Currency = "chf"
+	CurrencyPln Currency = "pln"
+	CurrencyTry Currency = "try"
+	CurrencyRon Currency = "ron"
+	CurrencyCzk Currency = "czk"
 )
 
 func (c Currency) String() string {
@@ -140,7 +156,7 @@ func (c Currency) String() string {
 // CurrencyValidator is a validator for the "currency" field enum values. It is called by the builders before save.
 func CurrencyValidator(c Currency) error {
 	switch c {
-	case CurrencyChf, CurrencyUsd, CurrencyEur, CurrencyGbp, CurrencyJpy, CurrencyZar, CurrencyAud, CurrencyNok, CurrencySek, CurrencyDkk, CurrencyRmb:
+	case CurrencyChf, CurrencyUsd, CurrencyEur, CurrencyGbp, CurrencyJpy, CurrencyZar, CurrencyAud, CurrencyNok, CurrencySek, CurrencyDkk, CurrencyInr, CurrencyRmb, CurrencyBgn:
 		return nil
 	default:
 		return fmt.Errorf("group: invalid enum value for currency field: %q", c)

@@ -14,19 +14,25 @@ export const useLabelStore = defineStore("labels", {
      */
     labels(state): LabelOut[] {
       if (state.allLabels === null) {
-        Promise.resolve(this.refresh());
+        this.client.labels.getAll().then(result => {
+          if (result.error) {
+            console.error(result.error);
+          }
+
+          this.allLabels = result.data;
+        });
       }
-      return state.allLabels;
+      return state.allLabels ?? [];
     },
   },
   actions: {
-    async refresh(): Promise<LabelOut[]> {
+    async refresh() {
       const result = await this.client.labels.getAll();
       if (result.error) {
         return result;
       }
 
-      this.allLabels = result.data.items;
+      this.allLabels = result.data;
       return result;
     },
   },

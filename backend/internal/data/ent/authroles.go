@@ -99,14 +99,14 @@ func (ar *AuthRoles) assignValues(columns []string, values []any) error {
 
 // QueryToken queries the "token" edge of the AuthRoles entity.
 func (ar *AuthRoles) QueryToken() *AuthTokensQuery {
-	return (&AuthRolesClient{config: ar.config}).QueryToken(ar)
+	return NewAuthRolesClient(ar.config).QueryToken(ar)
 }
 
 // Update returns a builder for updating this AuthRoles.
 // Note that you need to call AuthRoles.Unwrap() before calling this method if this AuthRoles
 // was returned from a transaction, and the transaction was committed or rolled back.
 func (ar *AuthRoles) Update() *AuthRolesUpdateOne {
-	return (&AuthRolesClient{config: ar.config}).UpdateOne(ar)
+	return NewAuthRolesClient(ar.config).UpdateOne(ar)
 }
 
 // Unwrap unwraps the AuthRoles entity that was returned from a transaction after it was closed,
@@ -133,9 +133,3 @@ func (ar *AuthRoles) String() string {
 
 // AuthRolesSlice is a parsable slice of AuthRoles.
 type AuthRolesSlice []*AuthRoles
-
-func (ar AuthRolesSlice) config(cfg config) {
-	for _i := range ar {
-		ar[_i].config = cfg
-	}
-}

@@ -238,16 +238,7 @@ func (ifu *ItemFieldUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if err := ifu.check(); err != nil {
 		return n, err
 	}
-	_spec := &sqlgraph.UpdateSpec{
-		Node: &sqlgraph.NodeSpec{
-			Table:   itemfield.Table,
-			Columns: itemfield.Columns,
-			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeUUID,
-				Column: itemfield.FieldID,
-			},
-		},
-	}
+	_spec := sqlgraph.NewUpdateSpec(itemfield.Table, itemfield.Columns, sqlgraph.NewFieldSpec(itemfield.FieldID, field.TypeUUID))
 	if ps := ifu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -299,10 +290,7 @@ func (ifu *ItemFieldUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{itemfield.ItemColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: item.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(item.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -315,10 +303,7 @@ func (ifu *ItemFieldUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{itemfield.ItemColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: item.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(item.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -489,6 +474,12 @@ func (ifuo *ItemFieldUpdateOne) ClearItem() *ItemFieldUpdateOne {
 	return ifuo
 }
 
+// Where appends a list predicates to the ItemFieldUpdate builder.
+func (ifuo *ItemFieldUpdateOne) Where(ps ...predicate.ItemField) *ItemFieldUpdateOne {
+	ifuo.mutation.Where(ps...)
+	return ifuo
+}
+
 // Select allows selecting one or more fields (columns) of the returned entity.
 // The default is selecting all fields defined in the entity schema.
 func (ifuo *ItemFieldUpdateOne) Select(field string, fields ...string) *ItemFieldUpdateOne {
@@ -561,16 +552,7 @@ func (ifuo *ItemFieldUpdateOne) sqlSave(ctx context.Context) (_node *ItemField, 
 	if err := ifuo.check(); err != nil {
 		return _node, err
 	}
-	_spec := &sqlgraph.UpdateSpec{
-		Node: &sqlgraph.NodeSpec{
-			Table:   itemfield.Table,
-			Columns: itemfield.Columns,
-			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeUUID,
-				Column: itemfield.FieldID,
-			},
-		},
-	}
+	_spec := sqlgraph.NewUpdateSpec(itemfield.Table, itemfield.Columns, sqlgraph.NewFieldSpec(itemfield.FieldID, field.TypeUUID))
 	id, ok := ifuo.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "ItemField.id" for update`)}
@@ -639,10 +621,7 @@ func (ifuo *ItemFieldUpdateOne) sqlSave(ctx context.Context) (_node *ItemField, 
 			Columns: []string{itemfield.ItemColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: item.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(item.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -655,10 +634,7 @@ func (ifuo *ItemFieldUpdateOne) sqlSave(ctx context.Context) (_node *ItemField, 
 			Columns: []string{itemfield.ItemColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: item.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(item.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

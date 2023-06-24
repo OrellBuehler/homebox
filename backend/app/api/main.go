@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -9,16 +10,22 @@ import (
 
 	atlas "ariga.io/atlas/sql/migrate"
 	"entgo.io/ent/dialect/sql/schema"
-	_ "github.com/mattn/go-sqlite3"
-	"github.com/rs/zerolog/log"
-	"github.com/thechosenlan/homebox/backend/app/api/static/docs"
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
+
 	"github.com/thechosenlan/homebox/backend/internal/core/services"
 	"github.com/thechosenlan/homebox/backend/internal/data/ent"
 	"github.com/thechosenlan/homebox/backend/internal/data/migrations"
 	"github.com/thechosenlan/homebox/backend/internal/data/repo"
 	"github.com/thechosenlan/homebox/backend/internal/sys/config"
 	"github.com/thechosenlan/homebox/backend/internal/web/mid"
-	"github.com/thechosenlan/homebox/backend/pkgs/server"
+	"github.com/thechosenlan/httpkit/errchain"
+	"github.com/thechosenlan/httpkit/server"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
+	"github.com/rs/zerolog/pkgerrors"
+
+	_ "github.com/thechosenlan/homebox/backend/pkgs/cgofreesqlite"
 )
 
 var (
@@ -27,23 +34,22 @@ var (
 	buildTime = "now"
 )
 
-// @title                      Go API Templates
+// @title                      Homebox API
 // @version                    1.0
-// @description                This is a simple Rest API Server Template that implements some basic User and Authentication patterns to help you get started and bootstrap your next project!.
+// @description                Track, Manage, and Organize your Things.
 // @contact.name               Don't
-// @license.name               MIT
 // @BasePath                   /api
 // @securityDefinitions.apikey Bearer
 // @in                         header
 // @name                       Authorization
 // @description                "Type 'Bearer TOKEN' to correctly set the API Key"
 func main() {
+	zerolog.ErrorStackMarshaler = pkgerrors.MarshalStack
+
 	cfg, err := config.New()
 	if err != nil {
 		panic(err)
 	}
-
-	docs.SwaggerInfo.Host = cfg.Swagger.Host
 
 	if err := run(cfg); err != nil {
 		panic(err)
@@ -57,7 +63,7 @@ func run(cfg *config.Config) error {
 	// =========================================================================
 	// Initialize Database & Repos
 
-	err := os.MkdirAll(cfg.Storage.Data, 0755)
+	err := os.MkdirAll(cfg.Storage.Data, 0o755)
 	if err != nil {
 		log.Fatal().Err(err).Msg("failed to create data directory")
 	}
@@ -118,26 +124,27 @@ func run(cfg *config.Config) error {
 	)
 
 	// =========================================================================
-	// Start Server\
+	// Start Server
+
 	logger := log.With().Caller().Logger()
 
-	mwLogger := mid.Logger(logger)
-	if app.conf.Mode == config.ModeDevelopment {
-		mwLogger = mid.SugarLogger(logger)
-	}
+	router := chi.NewMux()
+	router.Use(
+		middleware.RequestID,
+		middleware.RealIP,
+		mid.Logger(logger),
+		middleware.Recoverer,
+		middleware.StripSlashes,
+	)
+
+	chain := errchain.New(mid.Errors(app.server, logger))
+
+	app.mountRoutes(router, chain, app.repos)
 
 	app.server = server.NewServer(
 		server.WithHost(app.conf.Web.Host),
 		server.WithPort(app.conf.Web.Port),
-		server.WithMiddleware(
-			mwLogger,
-			mid.Errors(logger),
-			mid.Panic(app.conf.Mode == config.ModeDevelopment),
-		),
 	)
-
-	app.mountRoutes(app.repos)
-
 	log.Info().Msgf("Starting HTTP Server on %s:%s", app.server.Host, app.server.Port)
 
 	// =========================================================================
@@ -159,6 +166,19 @@ func run(cfg *config.Config) error {
 				Msg("failed to purge expired invitations")
 		}
 	})
+	go app.startBgTask(time.Duration(1)*time.Hour, func() {
+		now := time.Now()
+
+		if now.Hour() == 8 {
+			fmt.Println("run notifiers")
+			err := app.services.BackgroundService.SendNotifiersToday(context.Background())
+			if err != nil {
+				log.Error().
+					Err(err).
+					Msg("failed to send notifiers")
+			}
+		}
+	})
 
 	// TODO: Remove through external API that does setup
 	if cfg.Demo {
@@ -175,5 +195,5 @@ func run(cfg *config.Config) error {
 		}()
 	}
 
-	return app.server.Start()
+	return app.server.Start(router)
 }

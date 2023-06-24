@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import { ItemAttachment, ItemField, ItemUpdate } from "~~/lib/api/types/data-contracts";
+  import { ItemAttachment, ItemField, ItemOut, ItemUpdate } from "~~/lib/api/types/data-contracts";
   import { AttachmentTypes } from "~~/lib/api/types/non-generated";
   import { useLabelStore } from "~~/stores/labels";
   import { useLocationStore } from "~~/stores/locations";
@@ -23,7 +23,7 @@
   const labelStore = useLabelStore();
   const labels = computed(() => labelStore.labels);
 
-  const { data: item, refresh } = useAsyncData(async () => {
+  const { data: nullableItem, refresh } = useAsyncData(async () => {
     const { data, error } = await api.items.get(itemId.value);
     if (error) {
       toast.error("Failed to load item");
@@ -31,7 +31,8 @@
       return;
     }
 
-    if (locations) {
+    if (locations && data.location?.id) {
+      // @ts-expect-error - we know the locations is valid
       const location = locations.value.find(l => l.id === data.location.id);
       if (location) {
         data.location = location;
@@ -45,11 +46,18 @@
     return data;
   });
 
+  const item = computed<ItemOut>(() => nullableItem.value as ItemOut);
+
   onMounted(() => {
     refresh();
   });
 
   async function saveItem() {
+    if (!item.value.location?.id) {
+      toast.error("Failed to save item: no location selected");
+      return;
+    }
+
     const payload: ItemUpdate = {
       ...item.value,
       locationId: item.value.location?.id,
@@ -67,12 +75,48 @@
     toast.success("Item saved");
     navigateTo("/item/" + itemId.value);
   }
+  type NoUndefinedField<T> = { [P in keyof T]-?: NoUndefinedField<NonNullable<T[P]>> };
 
-  type FormField = {
-    type: "text" | "textarea" | "select" | "date" | "label" | "location" | "number" | "checkbox";
+  type StringKeys<T> = { [k in keyof T]: T[k] extends string ? k : never }[keyof T];
+  type OnlyString<T> = { [k in StringKeys<T>]: string };
+
+  type NumberKeys<T> = { [k in keyof T]: T[k] extends number ? k : never }[keyof T];
+  type OnlyNumber<T> = { [k in NumberKeys<T>]: number };
+
+  type TextFormField = {
+    type: "text" | "textarea";
     label: string;
-    ref: string;
+    // key of ItemOut where the value is a string
+    ref: keyof OnlyString<NoUndefinedField<ItemOut>>;
   };
+
+  type NumberFormField = {
+    type: "number";
+    label: string;
+    ref: keyof OnlyNumber<NoUndefinedField<ItemOut>> | keyof OnlyString<NoUndefinedField<ItemOut>>;
+  };
+
+  // https://stackoverflow.com/questions/50851263/how-do-i-require-a-keyof-to-be-for-a-property-of-a-specific-type
+  // I don't know why typescript can't just be normal
+  type BooleanKeys<T> = { [k in keyof T]: T[k] extends boolean ? k : never }[keyof T];
+  type OnlyBoolean<T> = { [k in BooleanKeys<T>]: boolean };
+
+  interface BoolFormField {
+    type: "checkbox";
+    label: string;
+    ref: keyof OnlyBoolean<NoUndefinedField<ItemOut>>;
+  }
+
+  type DateKeys<T> = { [k in keyof T]: T[k] extends Date | string ? k : never }[keyof T];
+  type OnlyDate<T> = { [k in DateKeys<T>]: Date | string };
+
+  type DateFormField = {
+    type: "date";
+    label: string;
+    ref: keyof OnlyDate<NoUndefinedField<ItemOut>>;
+  };
+
+  type FormField = TextFormField | BoolFormField | DateFormField | NumberFormField;
 
   const mainFields: FormField[] = [
     {
@@ -141,6 +185,7 @@
     {
       type: "date",
       label: "Purchase Date",
+      // @ts-expect-error - we know this is a date
       ref: "purchaseTime",
     },
   ];
@@ -154,6 +199,7 @@
     {
       type: "date",
       label: "Warranty Expires",
+      // @ts-expect-error - we know this is a date
       ref: "warrantyExpires",
     },
     {
@@ -163,7 +209,7 @@
     },
   ];
 
-  const soldFields = [
+  const soldFields: FormField[] = [
     {
       type: "text",
       label: "Sold To",
@@ -177,6 +223,7 @@
     {
       type: "date",
       label: "Sold At",
+      // @ts-expect-error - we know this is a date
       ref: "soldTime",
     },
   ];
@@ -194,7 +241,7 @@
     refAttachmentInput.value.click();
   }
 
-  function uploadImage(e: InputEvent) {
+  function uploadImage(e: Event) {
     const files = (e.target as HTMLInputElement).files;
     if (!files || !files.item(0)) {
       return;
@@ -273,7 +320,7 @@
     editState.type = attachment.type;
     editState.modal = true;
 
-    editState.obj = attachmentOpts.find(o => o.value === attachment.type);
+    editState.obj = attachmentOpts.find(o => o.value === attachment.type) || attachmentOpts[0];
   }
 
   async function updateAttachment() {
@@ -337,38 +384,29 @@
 
     <section>
       <div class="space-y-6">
-        <div class="card bg-base-100 shadow-xl sm:rounded-lg overflow-visible">
-          <BaseSectionHeader v-if="item" class="p-5">
-            <span class="text-base-content"> Edit </span>
-            <template #after>
-              <div class="modal-action mt-3">
-                <div class="mr-auto tooltip" data-tip="Hide the cruft! ">
-                  <label class="label cursor-pointer mr-auto">
-                    <input v-model="preferences.editorSimpleView" type="checkbox" class="toggle toggle-primary" />
-                    <span class="label-text ml-4"> Simple View </span>
-                  </label>
-                </div>
-                <BaseButton size="sm" @click="saveItem">
-                  <template #icon>
-                    <Icon name="mdi-content-save-outline" />
-                  </template>
-                  Save
-                </BaseButton>
+        <BaseCard class="overflow-visible">
+          <template #title> Edit Details </template>
+          <template #title-actions>
+            <div class="flex flex-wrap justify-between items-center mt-2 gap-4">
+              <div class="mr-auto tooltip" data-tip="Show Advanced Options">
+                <label class="label cursor-pointer mr-auto">
+                  <input v-model="preferences.editorAdvancedView" type="checkbox" class="toggle toggle-primary" />
+                  <span class="label-text ml-4"> Advanced </span>
+                </label>
               </div>
-            </template>
-          </BaseSectionHeader>
-          <div class="px-5 mb-6 grid md:grid-cols-2 gap-4">
-            <FormSelect
-              v-if="item"
-              v-model="item.location"
-              label="Location"
-              :items="locations ?? []"
-              compare-key="id"
-            />
+              <BaseButton size="sm" @click="saveItem">
+                <template #icon>
+                  <Icon name="mdi-content-save-outline" />
+                </template>
+                Save
+              </BaseButton>
+            </div>
+          </template>
+          <div class="px-5 pt-2 border-t mb-6 grid md:grid-cols-2 gap-4">
+            <LocationSelector v-model="item.location" />
             <FormMultiselect v-model="item.labels" label="Labels" :items="labels ?? []" />
-
             <Autocomplete
-              v-if="!preferences.editorSimpleView"
+              v-if="preferences.editorAdvancedView"
               v-model="parent"
               v-model:search="query"
               :items="results"
@@ -410,11 +448,11 @@
               </div>
             </div>
           </div>
-        </div>
+        </BaseCard>
 
         <BaseCard>
           <template #title> Custom Fields </template>
-          <div class="px-5 divide-y divide-gray-300 space-y-4">
+          <div class="px-5 border-t divide-y divide-gray-300 space-y-4">
             <div
               v-for="(field, idx) in item.fields"
               :key="`field-${idx}`"
@@ -438,7 +476,7 @@
         </BaseCard>
 
         <div
-          v-if="!preferences.editorSimpleView"
+          v-if="preferences.editorAdvancedView"
           ref="attDropZone"
           class="overflow-visible card bg-base-100 shadow-xl sm:rounded-lg"
         >
@@ -494,7 +532,7 @@
           </div>
         </div>
 
-        <div v-if="!preferences.editorSimpleView" class="overflow-visible card bg-base-100 shadow-xl sm:rounded-lg">
+        <div v-if="preferences.editorAdvancedView" class="overflow-visible card bg-base-100 shadow-xl sm:rounded-lg">
           <div class="px-4 py-5 sm:px-6">
             <h3 class="text-lg font-medium leading-6">Purchase Details</h3>
           </div>
@@ -536,7 +574,7 @@
           </div>
         </div>
 
-        <div v-if="!preferences.editorSimpleView" class="overflow-visible card bg-base-100 shadow-xl sm:rounded-lg">
+        <div v-if="preferences.editorAdvancedView" class="overflow-visible card bg-base-100 shadow-xl sm:rounded-lg">
           <div class="px-4 py-5 sm:px-6">
             <h3 class="text-lg font-medium leading-6">Warranty Details</h3>
           </div>
@@ -578,7 +616,7 @@
           </div>
         </div>
 
-        <div v-if="!preferences.editorSimpleView" class="overflow-visible card bg-base-100 shadow-xl sm:rounded-lg">
+        <div v-if="preferences.editorAdvancedView" class="overflow-visible card bg-base-100 shadow-xl sm:rounded-lg">
           <div class="px-4 py-5 sm:px-6">
             <h3 class="text-lg font-medium leading-6">Sold Details</h3>
           </div>

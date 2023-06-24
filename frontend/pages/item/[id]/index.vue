@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import { AnyDetail, Detail, Details } from "~~/components/global/DetailsSection/types";
+  import { AnyDetail, Detail, Details, filterZeroValues } from "~~/components/global/DetailsSection/types";
   import { ItemAttachment } from "~~/lib/api/types/data-contracts";
 
   definePageMeta({
@@ -39,6 +39,30 @@
     lastRoute.value = route.fullPath;
   });
 
+  async function adjustQuantity(amount: number) {
+    if (!item.value) {
+      return;
+    }
+
+    const newQuantity = item.value.quantity + amount;
+    if (newQuantity < 0) {
+      toast.error("Quantity cannot be negative");
+      return;
+    }
+
+    const resp = await api.items.patch(item.value.id, {
+      id: item.value.id,
+      quantity: newQuantity,
+    });
+
+    if (resp.error) {
+      toast.error("Failed to adjust quantity");
+      return;
+    }
+
+    item.value.quantity = newQuantity;
+  }
+
   type FilteredAttachments = {
     attachments: ItemAttachment[];
     warranty: ItemAttachment[];
@@ -55,6 +79,7 @@
       item.value?.attachments.reduce((acc, cur) => {
         if (cur.type === "photo") {
           acc.push({
+            // @ts-expect-error - it's impossible for this to be null at this point
             src: api.authURL(`/items/${item.value.id}/attachments/${cur.id}`),
           });
         }
@@ -99,6 +124,10 @@
   });
 
   const assetID = computed<Details>(() => {
+    if (!item.value) {
+      return [];
+    }
+
     if (item.value?.assetId === "000-000") {
       return [];
     }
@@ -112,7 +141,11 @@
   });
 
   const itemDetails = computed<Details>(() => {
-    return [
+    if (!item.value) {
+      return [];
+    }
+
+    const ret: Details = [
       {
         name: "Description",
         type: "markdown",
@@ -121,18 +154,22 @@
       {
         name: "Quantity",
         text: item.value?.quantity,
+        slot: "quantity",
       },
       {
         name: "Serial Number",
         text: item.value?.serialNumber,
+        copyable: true,
       },
       {
         name: "Model Number",
         text: item.value?.modelNumber,
+        copyable: true,
       },
       {
         name: "Manufacturer",
         text: item.value?.manufacturer,
+        copyable: true,
       },
       {
         name: "Insured",
@@ -164,6 +201,12 @@
         };
       }),
     ];
+
+    if (!preferences.value.showEmpty) {
+      return filterZeroValues(ret);
+    }
+
+    return ret;
   });
 
   const showAttachments = computed(() => {
@@ -234,6 +277,7 @@
         name: "Warranty Expires",
         text: item.value?.warrantyExpires || "",
         type: "date",
+        date: true,
       });
     }
 
@@ -242,6 +286,10 @@
       type: "markdown",
       text: item.value?.warrantyDetails || "",
     });
+
+    if (!preferences.value.showEmpty) {
+      return filterZeroValues(details);
+    }
 
     return details;
   });
@@ -254,7 +302,7 @@
   });
 
   const purchaseDetails = computed<Details>(() => {
-    return [
+    const v: Details = [
       {
         name: "Purchased From",
         text: item.value?.purchaseFrom || "",
@@ -268,8 +316,15 @@
         name: "Purchase Date",
         text: item.value?.purchaseTime || "",
         type: "date",
+        date: true,
       },
     ];
+
+    if (!preferences.value.showEmpty) {
+      return filterZeroValues(v);
+    }
+
+    return v;
   });
 
   const showSold = computed(() => {
@@ -280,7 +335,7 @@
   });
 
   const soldDetails = computed<Details>(() => {
-    return [
+    const v: Details = [
       {
         name: "Sold To",
         text: item.value?.soldTo || "",
@@ -294,8 +349,15 @@
         name: "Sold At",
         text: item.value?.soldTime || "",
         type: "date",
+        date: true,
       },
     ];
+
+    if (!preferences.value.showEmpty) {
+      return filterZeroValues(v);
+    }
+
+    return v;
   });
 
   const confirm = useConfirm();
@@ -348,8 +410,8 @@
       },
       {
         id: "log",
-        name: "Log",
-        to: `/item/${itemId.value}/log`,
+        name: "Maintenance",
+        to: `/item/${itemId.value}/maintenance`,
       },
       {
         id: "edit",
@@ -362,6 +424,7 @@
 
 <template>
   <BaseContainer v-if="item" class="pb-8">
+    <Title>{{ item.name }}</Title>
     <dialog ref="refDialog" class="z-[999] fixed bg-transparent">
       <div ref="refDialogBody" class="relative">
         <div class="absolute right-0 -mt-3 -mr-3 sm:-mt-4 sm:-mr-4 space-x-1">
@@ -383,6 +446,7 @@
         <span class="text-base-content">
           {{ item ? item.name : "" }}
         </span>
+
         <div v-if="item.parent" class="text-sm breadcrumbs pb-0">
           <ul class="text-base-content/70">
             <li>
@@ -392,8 +456,9 @@
           </ul>
         </div>
         <template #description>
+          <Markdown :source="item.description"> </Markdown>
           <div class="flex flex-wrap gap-2 mt-3">
-            <NuxtLink ref="badge" class="badge p-3" :to="`/location/${item.location.id}`">
+            <NuxtLink v-if="item.location" ref="badge" class="badge p-3" :to="`/location/${item.location.id}`">
               <Icon name="heroicons-map-pin" class="mr-2 swap-on"></Icon>
               {{ item.location.name }}
             </NuxtLink>
@@ -403,14 +468,14 @@
           </div>
         </template>
       </BaseSectionHeader>
-      <div class="flex flex-wrap items-center justify-between mb-6">
-        <div class="tabs">
+      <div class="flex flex-wrap items-center justify-between mb-6 mt-3">
+        <div class="btn-group">
           <NuxtLink
             v-for="t in tabs"
             :key="t.id"
             :to="t.to"
-            class="tab tab-bordered lg:tab-lg"
-            :class="`${t.to === currentPath ? 'tab-active' : ''}`"
+            class="btn btn-sm"
+            :class="`${t.to === currentPath ? 'btn-active' : ''}`"
           >
             {{ t.name }}
           </NuxtLink>
@@ -424,7 +489,7 @@
 
     <section>
       <div class="space-y-6">
-        <BaseCard v-if="!hasNested">
+        <BaseCard v-if="!hasNested" collapsable>
           <template #title> Details </template>
           <template #title-actions>
             <div class="flex flex-wrap justify-between items-center mt-2 gap-4">
@@ -435,7 +500,21 @@
               <PageQRCode />
             </div>
           </template>
-          <DetailsSection :details="itemDetails" />
+          <DetailsSection :details="itemDetails">
+            <template #quantity="{ detail }">
+              {{ detail.text }}
+              <span
+                class="opacity-0 group-hover:opacity-100 ml-4 my-0 duration-75 transition-opacity inline-flex gap-2"
+              >
+                <button class="btn btn-circle btn-xs" @click="adjustQuantity(-1)">
+                  <Icon name="mdi-minus" class="h-3 w-3" />
+                </button>
+                <button class="btn btn-circle btn-xs" @click="adjustQuantity(1)">
+                  <Icon name="mdi-plus" class="h-3 w-3" />
+                </button>
+              </span>
+            </template>
+          </DetailsSection>
         </BaseCard>
 
         <NuxtPage :item="item" :page-key="itemId" />
@@ -451,9 +530,9 @@
             </div>
           </BaseCard>
 
-          <BaseCard v-if="showAttachments">
+          <BaseCard v-if="showAttachments" collapsable>
             <template #title> Attachments </template>
-            <DetailsSection :details="attachmentDetails">
+            <DetailsSection v-if="attachmentDetails.length > 0" :details="attachmentDetails">
               <template #manuals>
                 <ItemAttachmentsList
                   v-if="attachments.manuals.length > 0"
@@ -483,19 +562,22 @@
                 />
               </template>
             </DetailsSection>
+            <div v-else>
+              <p class="text-base-content/70 px-6 pb-4">No attachments found</p>
+            </div>
           </BaseCard>
 
-          <BaseCard v-if="showPurchase">
+          <BaseCard v-if="showPurchase" collapsable>
             <template #title> Purchase Details </template>
             <DetailsSection :details="purchaseDetails" />
           </BaseCard>
 
-          <BaseCard v-if="showWarranty">
+          <BaseCard v-if="showWarranty" collapsable>
             <template #title> Warranty Details </template>
             <DetailsSection :details="warrantyDetails" />
           </BaseCard>
 
-          <BaseCard v-if="showSold">
+          <BaseCard v-if="showSold" collapsable>
             <template #title> Sold Details </template>
             <DetailsSection :details="soldDetails" />
           </BaseCard>
@@ -503,11 +585,8 @@
       </div>
     </section>
 
-    <section v-if="!hasNested" class="my-6 px-3">
-      <BaseSectionHeader v-if="item && item.children && item.children.length > 0"> Child Items </BaseSectionHeader>
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <ItemCard v-for="child in item.children" :key="child.id" :item="child" />
-      </div>
+    <section v-if="!hasNested && item.children.length > 0" class="my-6">
+      <ItemViewSelectable :items="item.children" />
     </section>
   </BaseContainer>
 </template>

@@ -220,13 +220,7 @@ func (gitc *GroupInvitationTokenCreate) sqlSave(ctx context.Context) (*GroupInvi
 func (gitc *GroupInvitationTokenCreate) createSpec() (*GroupInvitationToken, *sqlgraph.CreateSpec) {
 	var (
 		_node = &GroupInvitationToken{config: gitc.config}
-		_spec = &sqlgraph.CreateSpec{
-			Table: groupinvitationtoken.Table,
-			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeUUID,
-				Column: groupinvitationtoken.FieldID,
-			},
-		}
+		_spec = sqlgraph.NewCreateSpec(groupinvitationtoken.Table, sqlgraph.NewFieldSpec(groupinvitationtoken.FieldID, field.TypeUUID))
 	)
 	if id, ok := gitc.mutation.ID(); ok {
 		_node.ID = id
@@ -260,10 +254,7 @@ func (gitc *GroupInvitationTokenCreate) createSpec() (*GroupInvitationToken, *sq
 			Columns: []string{groupinvitationtoken.GroupColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: group.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(group.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

@@ -8,7 +8,7 @@ import (
 	"github.com/thechosenlan/homebox/backend/internal/data/repo"
 	"github.com/thechosenlan/homebox/backend/internal/sys/config"
 	"github.com/thechosenlan/homebox/backend/pkgs/mailer"
-	"github.com/thechosenlan/homebox/backend/pkgs/server"
+	"github.com/thechosenlan/httpkit/server"
 )
 
 type app struct {
@@ -37,8 +37,11 @@ func new(conf *config.Config) *app {
 }
 
 func (a *app) startBgTask(t time.Duration, fn func()) {
+	timer := time.NewTimer(t)
+
 	for {
+		timer.Reset(t)
 		a.server.Background(fn)
-		time.Sleep(t)
+		<-timer.C
 	}
 }

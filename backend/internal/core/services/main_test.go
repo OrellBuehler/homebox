@@ -3,10 +3,8 @@ package services
 import (
 	"context"
 	"log"
-	"math/rand"
 	"os"
 	"testing"
-	"time"
 
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/thechosenlan/homebox/backend/internal/data/ent"
@@ -49,8 +47,6 @@ func bootstrap() {
 }
 
 func TestMain(m *testing.M) {
-	rand.Seed(int64(time.Now().Unix()))
-
 	client, err := ent.Open("sqlite3", "file:ent?mode=memory&cache=shared&_fk=1")
 	if err != nil {
 		log.Fatalf("failed opening connection to sqlite: %v", err)

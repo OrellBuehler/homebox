@@ -116,7 +116,7 @@ var (
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "updated_at", Type: field.TypeTime},
 		{Name: "name", Type: field.TypeString, Size: 255},
-		{Name: "currency", Type: field.TypeEnum, Enums: []string{"chf", "usd", "eur", "gbp", "jpy", "zar", "aud", "nok", "sek", "dkk", "rmb"}, Default: "chf"},
+		{Name: "currency", Type: field.TypeEnum, Enums: []string{"chf", "usd", "eur", "gbp", "jpy", "zar", "aud", "nok", "sek", "dkk", "inr", "rmb", "bgn"}, Default: "usd"},
 	}
 	// GroupsTable holds the schema information for the "groups" table.
 	GroupsTable = &schema.Table{
@@ -323,7 +323,8 @@ var (
 		{Name: "id", Type: field.TypeUUID},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "updated_at", Type: field.TypeTime},
-		{Name: "date", Type: field.TypeTime},
+		{Name: "date", Type: field.TypeTime, Nullable: true},
+		{Name: "scheduled_date", Type: field.TypeTime, Nullable: true},
 		{Name: "name", Type: field.TypeString, Size: 255},
 		{Name: "description", Type: field.TypeString, Nullable: true, Size: 2500},
 		{Name: "cost", Type: field.TypeFloat64, Default: 0},
@@ -337,9 +338,62 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "maintenance_entries_items_maintenance_entries",
-				Columns:    []*schema.Column{MaintenanceEntriesColumns[7]},
+				Columns:    []*schema.Column{MaintenanceEntriesColumns[8]},
 				RefColumns: []*schema.Column{ItemsColumns[0]},
 				OnDelete:   schema.Cascade,
+			},
+		},
+	}
+	// NotifiersColumns holds the columns for the "notifiers" table.
+	NotifiersColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "name", Type: field.TypeString, Size: 255},
+		{Name: "url", Type: field.TypeString, Size: 2083},
+		{Name: "is_active", Type: field.TypeBool, Default: true},
+		{Name: "group_id", Type: field.TypeUUID},
+		{Name: "user_id", Type: field.TypeUUID},
+	}
+	// NotifiersTable holds the schema information for the "notifiers" table.
+	NotifiersTable = &schema.Table{
+		Name:       "notifiers",
+		Columns:    NotifiersColumns,
+		PrimaryKey: []*schema.Column{NotifiersColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "notifiers_groups_notifiers",
+				Columns:    []*schema.Column{NotifiersColumns[6]},
+				RefColumns: []*schema.Column{GroupsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "notifiers_users_notifiers",
+				Columns:    []*schema.Column{NotifiersColumns[7]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "notifier_user_id",
+				Unique:  false,
+				Columns: []*schema.Column{NotifiersColumns[7]},
+			},
+			{
+				Name:    "notifier_user_id_is_active",
+				Unique:  false,
+				Columns: []*schema.Column{NotifiersColumns[7], NotifiersColumns[5]},
+			},
+			{
+				Name:    "notifier_group_id",
+				Unique:  false,
+				Columns: []*schema.Column{NotifiersColumns[6]},
+			},
+			{
+				Name:    "notifier_group_id_is_active",
+				Unique:  false,
+				Columns: []*schema.Column{NotifiersColumns[6], NotifiersColumns[5]},
 			},
 		},
 	}
@@ -352,8 +406,8 @@ var (
 		{Name: "email", Type: field.TypeString, Unique: true, Size: 255},
 		{Name: "password", Type: field.TypeString, Size: 255},
 		{Name: "is_superuser", Type: field.TypeBool, Default: false},
-		{Name: "role", Type: field.TypeEnum, Enums: []string{"user", "owner"}, Default: "user"},
 		{Name: "superuser", Type: field.TypeBool, Default: false},
+		{Name: "role", Type: field.TypeEnum, Enums: []string{"user", "owner"}, Default: "user"},
 		{Name: "activated_on", Type: field.TypeTime, Nullable: true},
 		{Name: "group_users", Type: field.TypeUUID},
 	}
@@ -409,6 +463,7 @@ var (
 		LabelsTable,
 		LocationsTable,
 		MaintenanceEntriesTable,
+		NotifiersTable,
 		UsersTable,
 		LabelItemsTable,
 	}
@@ -429,6 +484,8 @@ func init() {
 	LocationsTable.ForeignKeys[0].RefTable = GroupsTable
 	LocationsTable.ForeignKeys[1].RefTable = LocationsTable
 	MaintenanceEntriesTable.ForeignKeys[0].RefTable = ItemsTable
+	NotifiersTable.ForeignKeys[0].RefTable = GroupsTable
+	NotifiersTable.ForeignKeys[1].RefTable = UsersTable
 	UsersTable.ForeignKeys[0].RefTable = GroupsTable
 	LabelItemsTable.ForeignKeys[0].RefTable = LabelsTable
 	LabelItemsTable.ForeignKeys[1].RefTable = ItemsTable

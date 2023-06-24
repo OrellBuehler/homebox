@@ -13,6 +13,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/thechosenlan/homebox/backend/internal/data/ent/authtokens"
 	"github.com/thechosenlan/homebox/backend/internal/data/ent/group"
+	"github.com/thechosenlan/homebox/backend/internal/data/ent/notifier"
 	"github.com/thechosenlan/homebox/backend/internal/data/ent/user"
 )
 
@@ -83,20 +84,6 @@ func (uc *UserCreate) SetNillableIsSuperuser(b *bool) *UserCreate {
 	return uc
 }
 
-// SetRole sets the "role" field.
-func (uc *UserCreate) SetRole(u user.Role) *UserCreate {
-	uc.mutation.SetRole(u)
-	return uc
-}
-
-// SetNillableRole sets the "role" field if the given value is not nil.
-func (uc *UserCreate) SetNillableRole(u *user.Role) *UserCreate {
-	if u != nil {
-		uc.SetRole(*u)
-	}
-	return uc
-}
-
 // SetSuperuser sets the "superuser" field.
 func (uc *UserCreate) SetSuperuser(b bool) *UserCreate {
 	uc.mutation.SetSuperuser(b)
@@ -107,6 +94,20 @@ func (uc *UserCreate) SetSuperuser(b bool) *UserCreate {
 func (uc *UserCreate) SetNillableSuperuser(b *bool) *UserCreate {
 	if b != nil {
 		uc.SetSuperuser(*b)
+	}
+	return uc
+}
+
+// SetRole sets the "role" field.
+func (uc *UserCreate) SetRole(u user.Role) *UserCreate {
+	uc.mutation.SetRole(u)
+	return uc
+}
+
+// SetNillableRole sets the "role" field if the given value is not nil.
+func (uc *UserCreate) SetNillableRole(u *user.Role) *UserCreate {
+	if u != nil {
+		uc.SetRole(*u)
 	}
 	return uc
 }
@@ -165,6 +166,21 @@ func (uc *UserCreate) AddAuthTokens(a ...*AuthTokens) *UserCreate {
 	return uc.AddAuthTokenIDs(ids...)
 }
 
+// AddNotifierIDs adds the "notifiers" edge to the Notifier entity by IDs.
+func (uc *UserCreate) AddNotifierIDs(ids ...uuid.UUID) *UserCreate {
+	uc.mutation.AddNotifierIDs(ids...)
+	return uc
+}
+
+// AddNotifiers adds the "notifiers" edges to the Notifier entity.
+func (uc *UserCreate) AddNotifiers(n ...*Notifier) *UserCreate {
+	ids := make([]uuid.UUID, len(n))
+	for i := range n {
+		ids[i] = n[i].ID
+	}
+	return uc.AddNotifierIDs(ids...)
+}
+
 // Mutation returns the UserMutation object of the builder.
 func (uc *UserCreate) Mutation() *UserMutation {
 	return uc.mutation
@@ -212,13 +228,13 @@ func (uc *UserCreate) defaults() {
 		v := user.DefaultIsSuperuser
 		uc.mutation.SetIsSuperuser(v)
 	}
-	if _, ok := uc.mutation.Role(); !ok {
-		v := user.DefaultRole
-		uc.mutation.SetRole(v)
-	}
 	if _, ok := uc.mutation.Superuser(); !ok {
 		v := user.DefaultSuperuser
 		uc.mutation.SetSuperuser(v)
+	}
+	if _, ok := uc.mutation.Role(); !ok {
+		v := user.DefaultRole
+		uc.mutation.SetRole(v)
 	}
 	if _, ok := uc.mutation.ID(); !ok {
 		v := user.DefaultID()
@@ -261,6 +277,9 @@ func (uc *UserCreate) check() error {
 	if _, ok := uc.mutation.IsSuperuser(); !ok {
 		return &ValidationError{Name: "is_superuser", err: errors.New(`ent: missing required field "User.is_superuser"`)}
 	}
+	if _, ok := uc.mutation.Superuser(); !ok {
+		return &ValidationError{Name: "superuser", err: errors.New(`ent: missing required field "User.superuser"`)}
+	}
 	if _, ok := uc.mutation.Role(); !ok {
 		return &ValidationError{Name: "role", err: errors.New(`ent: missing required field "User.role"`)}
 	}
@@ -268,9 +287,6 @@ func (uc *UserCreate) check() error {
 		if err := user.RoleValidator(v); err != nil {
 			return &ValidationError{Name: "role", err: fmt.Errorf(`ent: validator failed for field "User.role": %w`, err)}
 		}
-	}
-	if _, ok := uc.mutation.Superuser(); !ok {
-		return &ValidationError{Name: "superuser", err: errors.New(`ent: missing required field "User.superuser"`)}
 	}
 	if _, ok := uc.mutation.GroupID(); !ok {
 		return &ValidationError{Name: "group", err: errors.New(`ent: missing required edge "User.group"`)}
@@ -304,13 +320,7 @@ func (uc *UserCreate) sqlSave(ctx context.Context) (*User, error) {
 func (uc *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 	var (
 		_node = &User{config: uc.config}
-		_spec = &sqlgraph.CreateSpec{
-			Table: user.Table,
-			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeUUID,
-				Column: user.FieldID,
-			},
-		}
+		_spec = sqlgraph.NewCreateSpec(user.Table, sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID))
 	)
 	if id, ok := uc.mutation.ID(); ok {
 		_node.ID = id
@@ -340,13 +350,13 @@ func (uc *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 		_spec.SetField(user.FieldIsSuperuser, field.TypeBool, value)
 		_node.IsSuperuser = value
 	}
-	if value, ok := uc.mutation.Role(); ok {
-		_spec.SetField(user.FieldRole, field.TypeEnum, value)
-		_node.Role = value
-	}
 	if value, ok := uc.mutation.Superuser(); ok {
 		_spec.SetField(user.FieldSuperuser, field.TypeBool, value)
 		_node.Superuser = value
+	}
+	if value, ok := uc.mutation.Role(); ok {
+		_spec.SetField(user.FieldRole, field.TypeEnum, value)
+		_node.Role = value
 	}
 	if value, ok := uc.mutation.ActivatedOn(); ok {
 		_spec.SetField(user.FieldActivatedOn, field.TypeTime, value)
@@ -360,10 +370,7 @@ func (uc *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 			Columns: []string{user.GroupColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: group.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(group.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -380,10 +387,23 @@ func (uc *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 			Columns: []string{user.AuthTokensColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: authtokens.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(authtokens.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := uc.mutation.NotifiersIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.NotifiersTable,
+			Columns: []string{user.NotifiersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(notifier.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

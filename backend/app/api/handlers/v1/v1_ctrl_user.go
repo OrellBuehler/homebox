@@ -1,24 +1,27 @@
 package v1
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/google/uuid"
-	"github.com/rs/zerolog/log"
 	"github.com/thechosenlan/homebox/backend/internal/core/services"
 	"github.com/thechosenlan/homebox/backend/internal/data/repo"
 	"github.com/thechosenlan/homebox/backend/internal/sys/validate"
-	"github.com/thechosenlan/homebox/backend/pkgs/server"
+	"github.com/thechosenlan/httpkit/errchain"
+	"github.com/thechosenlan/httpkit/server"
+	"github.com/rs/zerolog/log"
 )
 
-// HandleUserSelf godoc
-// @Summary Get the current user
-// @Tags    User
-// @Produce json
-// @Param   payload body services.UserRegistration true "User Data"
-// @Success 204
-// @Router  /v1/users/register [Post]
-func (ctrl *V1Controller) HandleUserRegistration() server.HandlerFunc {
+// HandleUserRegistration godoc
+//
+//	@Summary Register New User
+//	@Tags    User
+//	@Produce json
+//	@Param   payload body services.UserRegistration true "User Data"
+//	@Success 204
+//	@Router  /v1/users/register [Post]
+func (ctrl *V1Controller) HandleUserRegistration() errchain.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		regData := services.UserRegistration{}
 
@@ -28,7 +31,7 @@ func (ctrl *V1Controller) HandleUserRegistration() server.HandlerFunc {
 		}
 
 		if !ctrl.allowRegistration && regData.GroupToken == "" {
-			return validate.NewRequestError(nil, http.StatusForbidden)
+			return validate.NewRequestError(fmt.Errorf("user registration disabled"), http.StatusForbidden)
 		}
 
 		_, err := ctrl.svc.User.RegisterUser(r.Context(), regData)
@@ -37,18 +40,19 @@ func (ctrl *V1Controller) HandleUserRegistration() server.HandlerFunc {
 			return validate.NewRequestError(err, http.StatusInternalServerError)
 		}
 
-		return server.Respond(w, http.StatusNoContent, nil)
+		return server.JSON(w, http.StatusNoContent, nil)
 	}
 }
 
 // HandleUserSelf godoc
-// @Summary  Get the current user
-// @Tags     User
-// @Produce  json
-// @Success  200 {object} server.Result{item=repo.UserOut}
-// @Router   /v1/users/self [GET]
-// @Security Bearer
-func (ctrl *V1Controller) HandleUserSelf() server.HandlerFunc {
+//
+//	@Summary  Get User Self
+//	@Tags     User
+//	@Produce  json
+//	@Success  200 {object} Wrapped{item=repo.UserOut}
+//	@Router   /v1/users/self [GET]
+//	@Security Bearer
+func (ctrl *V1Controller) HandleUserSelf() errchain.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		token := services.UseTokenCtx(r.Context())
 		usr, err := ctrl.svc.User.GetSelf(r.Context(), token)
@@ -57,19 +61,20 @@ func (ctrl *V1Controller) HandleUserSelf() server.HandlerFunc {
 			return validate.NewRequestError(err, http.StatusInternalServerError)
 		}
 
-		return server.Respond(w, http.StatusOK, server.Wrap(usr))
+		return server.JSON(w, http.StatusOK, Wrap(usr))
 	}
 }
 
 // HandleUserSelfUpdate godoc
-// @Summary  Update the current user
-// @Tags     User
-// @Produce  json
-// @Param    payload body     repo.UserUpdate true "User Data"
-// @Success  200     {object} server.Result{item=repo.UserUpdate}
-// @Router   /v1/users/self [PUT]
-// @Security Bearer
-func (ctrl *V1Controller) HandleUserSelfUpdate() server.HandlerFunc {
+//
+//	@Summary  Update Account
+//	@Tags     User
+//	@Produce  json
+//	@Param    payload body     repo.UserUpdate true "User Data"
+//	@Success  200     {object} Wrapped{item=repo.UserUpdate}
+//	@Router   /v1/users/self [PUT]
+//	@Security Bearer
+func (ctrl *V1Controller) HandleUserSelfUpdate() errchain.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		updateData := repo.UserUpdate{}
 		if err := server.Decode(r, &updateData); err != nil {
@@ -79,23 +84,23 @@ func (ctrl *V1Controller) HandleUserSelfUpdate() server.HandlerFunc {
 
 		actor := services.UseUserCtx(r.Context())
 		newData, err := ctrl.svc.User.UpdateSelf(r.Context(), actor.ID, updateData)
-
 		if err != nil {
 			return validate.NewRequestError(err, http.StatusInternalServerError)
 		}
 
-		return server.Respond(w, http.StatusOK, server.Wrap(newData))
+		return server.JSON(w, http.StatusOK, Wrap(newData))
 	}
 }
 
 // HandleUserSelfDelete godoc
-// @Summary  Deletes the user account
-// @Tags     User
-// @Produce  json
-// @Success  204
-// @Router   /v1/users/self [DELETE]
-// @Security Bearer
-func (ctrl *V1Controller) HandleUserSelfDelete() server.HandlerFunc {
+//
+//	@Summary  Delete Account
+//	@Tags     User
+//	@Produce  json
+//	@Success  204
+//	@Router   /v1/users/self [DELETE]
+//	@Security Bearer
+func (ctrl *V1Controller) HandleUserSelfDelete() errchain.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		if ctrl.isDemo {
 			return validate.NewRequestError(nil, http.StatusForbidden)
@@ -106,7 +111,7 @@ func (ctrl *V1Controller) HandleUserSelfDelete() server.HandlerFunc {
 			return validate.NewRequestError(err, http.StatusInternalServerError)
 		}
 
-		return server.Respond(w, http.StatusNoContent, nil)
+		return server.JSON(w, http.StatusNoContent, nil)
 	}
 }
 
@@ -118,13 +123,14 @@ type (
 )
 
 // HandleUserSelfChangePassword godoc
-// @Summary  Updates the users password
-// @Tags     User
-// @Success  204
-// @Param    payload body ChangePassword true "Password Payload"
-// @Router   /v1/users/change-password [PUT]
-// @Security Bearer
-func (ctrl *V1Controller) HandleUserSelfChangePassword() server.HandlerFunc {
+//
+//	@Summary  Change Password
+//	@Tags     User
+//	@Success  204
+//	@Param    payload body ChangePassword true "Password Payload"
+//	@Router   /v1/users/change-password [PUT]
+//	@Security Bearer
+func (ctrl *V1Controller) HandleUserSelfChangePassword() errchain.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		if ctrl.isDemo {
 			return validate.NewRequestError(nil, http.StatusForbidden)
@@ -143,6 +149,6 @@ func (ctrl *V1Controller) HandleUserSelfChangePassword() server.HandlerFunc {
 			return validate.NewRequestError(err, http.StatusInternalServerError)
 		}
 
-		return server.Respond(w, http.StatusNoContent, nil)
+		return server.JSON(w, http.StatusNoContent, nil)
 	}
 }

@@ -50,16 +50,16 @@
           name: "Created",
           text: location.value?.createdAt,
           type: "date",
-        },
+        } as AnyDetail,
         {
           name: "Updated",
           text: location.value?.updatedAt,
           type: "date",
-        },
+        } as AnyDetail,
         {
           name: "Database ID",
           text: location.value?.id,
-        },
+        } as AnyDetail,
       ];
     }
 
@@ -120,7 +120,6 @@
   const locationStore = useLocationStore();
   const locations = computed(() => locationStore.allLocations);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const parent = ref<LocationSummary | any>({});
 </script>
 
@@ -131,7 +130,7 @@
       <form v-if="location" @submit.prevent="update">
         <FormTextField v-model="updateData.name" :autofocus="true" label="Location Name" />
         <FormTextArea v-model="updateData.description" label="Location Description" />
-        <FormAutocomplete v-model="parent" :items="locations" item-text="name" item-value="id" label="Parent" />
+        <LocationSelector v-model="parent" />
         <div class="modal-action">
           <BaseButton type="submit" :loading="updating"> Update </BaseButton>
         </div>
@@ -157,7 +156,7 @@
         </template>
 
         <template #title-actions>
-          <div class="flex mt-2 gap-2">
+          <div class="flex flex-wrap mt-2 gap-2">
             <div class="form-control max-w-[160px]">
               <label class="label cursor-pointer">
                 <input v-model="preferences.showDetails" type="checkbox" class="toggle toggle-primary" />
@@ -179,12 +178,9 @@
         <DetailsSection :details="details" />
       </BaseCard>
 
-      <section v-if="location && location.items.length > 0">
-        <BaseSectionHeader class="mb-5"> Items </BaseSectionHeader>
-        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-          <ItemCard v-for="item in location.items" :key="item.id" :item="item" />
-        </div>
-      </section>
+      <template v-if="location && location.items.length > 0">
+        <ItemViewSelectable :items="location.items" />
+      </template>
 
       <section v-if="location && location.children.length > 0">
         <BaseSectionHeader class="mb-5"> Child Locations </BaseSectionHeader>

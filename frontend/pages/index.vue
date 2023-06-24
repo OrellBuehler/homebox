@@ -1,5 +1,4 @@
 <script setup lang="ts">
-  import { useAuthStore } from "~~/stores/auth";
   useHead({
     title: "Homebox | Organize and Tag Your Stuff",
   });
@@ -7,6 +6,11 @@
   definePageMeta({
     layout: "empty",
   });
+
+  const ctx = useAuthContext();
+  if (ctx.isAuthorized()) {
+    navigateTo("/home");
+  }
 
   const api = usePublicApi();
   const toast = useNotifier();
@@ -28,11 +32,6 @@
     }
   });
 
-  const authStore = useAuthStore();
-  if (!authStore.isTokenExpired) {
-    navigateTo("/home");
-  }
-
   const route = useRoute();
   const router = useRouter();
 
@@ -40,6 +39,7 @@
   const email = ref("");
   const password = ref("");
   const canRegister = ref(false);
+  const remember = ref(false);
 
   const groupToken = computed<string>({
     get() {
@@ -91,7 +91,7 @@
 
   async function login() {
     loading.value = true;
-    const { data, error } = await api.login(email.value, loginPassword.value);
+    const { error } = await ctx.login(api, email.value, loginPassword.value, remember.value);
 
     if (error) {
       toast.error("Invalid email or password");
@@ -101,13 +101,6 @@
 
     toast.success("Logged in successfully");
 
-    // @ts-expect-error - expires is either a date or a string, need to figure out store typing
-    authStore.$patch({
-      token: data.token,
-      expires: data.expiresAt,
-      attachmentToken: data.attachmentToken,
-    });
-
     navigateTo("/home");
     loading.value = false;
   }
@@ -116,7 +109,7 @@
 </script>
 
 <template>
-  <div>
+  <div class="flex flex-col min-h-screen">
     <div class="fill-primary min-w-full absolute top-0 z-[-1]">
       <div class="bg-primary flex-col flex min-h-[20vh]" />
       <svg
@@ -139,7 +132,7 @@
             <AppLogo class="w-12 -mb-4" />
             x
           </h2>
-          <p class="ml-1 text-lg text-base-content/50">Track, Organize, and Manage your Shit.</p>
+          <p class="ml-1 text-lg text-base-content/50">Track, Organize, and Manage your Things.</p>
         </div>
         <div class="flex mt-6 sm:mt-0 gap-4 ml-auto text-neutral-content">
           <a class="tooltip" data-tip="Project Github" href="https://github.com/thechosenlan/homebox" target="_blank">
@@ -174,7 +167,7 @@
                       Don't Want To Join a Group?
                     </button>
                   </div>
-                  <FormTextField v-model="password" label="Set your password" type="password" />
+                  <FormPassword v-model="password" label="Set your password" />
                   <PasswordScore v-model:valid="canRegister" :password="password" />
                   <div class="card-actions justify-end">
                     <button
@@ -202,9 +195,17 @@
                     <p class="text-xs text-center"><b>Password</b> demo</p>
                   </template>
                   <FormTextField v-model="email" label="Email" />
-                  <FormTextField v-model="loginPassword" label="Password" type="password" />
-                  <div class="card-actions justify-end mt-2">
-                    <button type="submit" class="btn btn-primary" :class="loading ? 'loading' : ''" :disabled="loading">
+                  <FormPassword v-model="loginPassword" label="Password" />
+                  <div class="max-w-[140px]">
+                    <FormCheckbox v-model="remember" label="Remember Me" />
+                  </div>
+                  <div class="card-actions justify-end">
+                    <button
+                      type="submit"
+                      class="btn btn-primary btn-block"
+                      :class="loading ? 'loading' : ''"
+                      :disabled="loading"
+                    >
                       Login
                     </button>
                   </div>
@@ -213,17 +214,27 @@
             </form>
           </Transition>
           <div class="text-center mt-6">
-            <button
-              class="text-base-content text-lg hover:bg-primary hover:text-primary-content px-3 py-1 rounded-xl transition-colors duration-200"
+            <BaseButton
+              v-if="status && status.allowRegistration"
+              class="btn-primary btn-wide"
               @click="() => toggleLogin()"
             >
-              {{ registerForm ? "Already a User? Login" : "Not a User? Register" }}
-            </button>
+              <template #icon>
+                <Icon v-if="!registerForm" name="mdi-account-plus-outline" class="w-5 h-5 swap-off" />
+                <Icon v-else name="mdi-login" class="w-5 h-5 swap-off" />
+                <Icon name="mdi-arrow-right" class="w-5 h-5 swap-on" />
+              </template>
+              {{ registerForm ? "Login" : "Register" }}
+            </BaseButton>
+            <p v-else class="text-base-content italic text-sm inline-flex items-center gap-2">
+              <Icon name="mdi-lock" class="w-4 h-4 inline-block" />
+              Registration Disabled
+            </p>
           </div>
         </div>
       </div>
     </div>
-    <footer v-if="status" class="absolute text-center w-full bottom-0 pb-4">
+    <footer v-if="status" class="mt-auto text-center w-full bottom-0 pb-4">
       <p class="text-center text-sm">Version: {{ status.build.version }} ~ Build: {{ status.build.commit }}</p>
     </footer>
   </div>

@@ -1,8 +1,8 @@
 <script setup lang="ts">
   import { Detail } from "~~/components/global/DetailsSection/types";
-  import { useAuthStore } from "~~/stores/auth";
   import { themes } from "~~/lib/data/themes";
   import { currencies, Currency } from "~~/lib/data/currency";
+  import { NotifierCreate, NotifierOut } from "~~/lib/api/types/data-contracts";
 
   definePageMeta({
     middleware: ["auth"],
@@ -40,15 +40,22 @@
 
   // Sync Initial Currency
   watch(group, () => {
-    if (group.value) {
-      const found = currencies.find(c => c.code === group.value.currency);
-      if (found) {
-        currency.value = found;
-      }
+    if (!group.value) {
+      return;
+    }
+
+    // @ts-expect-error - typescript is stupid, it should know group.value is not null
+    const found = currencies.find(c => c.code === group.value.currency);
+    if (found) {
+      currency.value = found;
     }
   });
 
   async function updateGroup() {
+    if (!group.value) {
+      return;
+    }
+
     const { data, error } = await api.group.update({
       name: group.value.name,
       currency: group.value.currency,
@@ -72,17 +79,18 @@
 
   const { setTheme } = useTheme();
 
-  const auth = useAuthStore();
+  const auth = useAuthContext();
 
   const details = computed(() => {
+    console.log(auth.user);
     return [
       {
         name: "Name",
-        text: auth.self?.name || "Unknown",
+        text: auth.user?.name || "Unknown",
       },
       {
         name: "Email",
-        text: auth.self?.email || "Unknown",
+        text: auth.user?.email || "Unknown",
       },
     ] as Detail[];
   });
@@ -162,23 +170,116 @@
     passwordChange.loading = false;
   }
 
-  async function ensureAssetIDs() {
-    const { isCanceled } = await confirm.open(
-      "Are you sure you want to ensure all assets have an ID? This will take a while and cannot be undone."
-    );
+  // ===========================================================
+  // Notifiers
 
-    if (isCanceled) {
+  const notifiers = useAsyncData(async () => {
+    const { data } = await api.notifiers.getAll();
+
+    return data;
+  });
+
+  const targetID = ref("");
+  const notifier = ref<NotifierCreate | null>(null);
+  const notifierDialog = ref(false);
+
+  function openNotifierDialog(v: NotifierOut | null) {
+    if (v) {
+      targetID.value = v.id;
+      notifier.value = {
+        name: v.name,
+        url: "",
+        isActive: v.isActive,
+      };
+    } else {
+      notifier.value = {
+        name: "",
+        url: "",
+        isActive: true,
+      };
+    }
+
+    notifierDialog.value = true;
+  }
+
+  async function createNotifier() {
+    if (!notifier.value) {
       return;
     }
 
-    const result = await api.actions.ensureAssetIDs();
+    if (targetID.value) {
+      await editNotifier();
+      return;
+    }
+
+    const result = await api.notifiers.create({
+      name: notifier.value.name,
+      url: notifier.value.url || "",
+      isActive: notifier.value.isActive,
+    });
 
     if (result.error) {
-      notify.error("Failed to ensure asset IDs.");
+      notify.error("Failed to create notifier.");
+    }
+
+    notifier.value = null;
+    notifierDialog.value = false;
+
+    await notifiers.refresh();
+  }
+
+  async function editNotifier() {
+    if (!notifier.value) {
       return;
     }
 
-    notify.success(`${result.data.completed} assets have been updated.`);
+    const result = await api.notifiers.update(targetID.value, {
+      name: notifier.value.name,
+      url: notifier.value.url || "",
+      isActive: notifier.value.isActive,
+    });
+
+    if (result.error) {
+      notify.error("Failed to update notifier.");
+    }
+
+    notifier.value = null;
+    notifierDialog.value = false;
+    targetID.value = "";
+
+    await notifiers.refresh();
+  }
+
+  async function deleteNotifier(id: string) {
+    const result = await confirm.open("Are you sure you want to delete this notifier?");
+
+    if (result.isCanceled) {
+      return;
+    }
+
+    const { error } = await api.notifiers.delete(id);
+
+    if (error) {
+      notify.error("Failed to delete notifier.");
+      return;
+    }
+
+    await notifiers.refresh();
+  }
+
+  async function testNotifier() {
+    if (!notifier.value) {
+      return;
+    }
+
+    const { error } = await api.notifiers.test(notifier.value.url);
+
+    if (error) {
+      notify.error("Failed to test notifier.");
+      return;
+    }
+
+    notify.success("Notifier test successful.");
   }
 </script>
 
@@ -187,8 +288,8 @@
     <BaseModal v-model="passwordChange.dialog">
       <template #title> Change Password </template>
 
-      <FormTextField v-model="passwordChange.current" label="Current Password" type="password" />
-      <FormTextField v-model="passwordChange.new" label="New Password" type="password" />
+      <FormPassword v-model="passwordChange.current" label="Current Password" />
+      <FormPassword v-model="passwordChange.new" label="New Password" />
       <PasswordScore v-model:valid="passwordChange.isValid" :password="passwordChange.new" />
 
       <div class="flex">
@@ -201,6 +302,24 @@
           Submit
         </BaseButton>
       </div>
+    </BaseModal>
+
+    <BaseModal v-model="notifierDialog">
+      <template #title> {{ notifier ? "Edit" : "Create" }} Notifier </template>
+
+      <form @submit.prevent="createNotifier">
+        <template v-if="notifier">
+          <FormTextField v-model="notifier.name" label="Name" />
+          <FormTextField v-model="notifier.url" label="URL" />
+          <div class="max-w-[100px]">
+            <FormCheckbox v-model="notifier.isActive" label="Enabled" />
+          </div>
+        </template>
+        <div class="flex gap-2 justify-between mt-4">
+          <BaseButton :disabled="!(notifier && notifier.url)" type="button" @click="testNotifier"> Test </BaseButton>
+          <BaseButton type="submit"> Submit </BaseButton>
+        </div>
+      </form>
     </BaseModal>
 
     <BaseContainer class="flex flex-col gap-4 mb-6">
@@ -221,13 +340,57 @@
             <BaseButton size="sm" @click="generateToken"> Generate Invite Link </BaseButton>
           </div>
           <div v-if="token" class="pt-4 flex items-center pl-1">
-            <CopyText class="mr-2 btn-primary" :text="tokenUrl" />
+            <CopyText class="mr-2 btn-primary btn btn-outline btn-square btn-sm" :text="tokenUrl" />
             {{ tokenUrl }}
           </div>
           <div v-if="token" class="pt-4 flex items-center pl-1">
-            <CopyText class="mr-2 btn-primary" :text="token" />
+            <CopyText class="mr-2 btn-primary btn btn-outline btn-square btn-sm" :text="token" />
             {{ token }}
           </div>
+        </div>
+      </BaseCard>
+
+      <BaseCard>
+        <template #title>
+          <BaseSectionHeader>
+            <Icon name="mdi-megaphone" class="mr-2 -mt-1 text-base-600" />
+            <span class="text-base-600"> Notifiers </span>
+            <template #description> Get notifications for up coming maintenance reminders </template>
+          </BaseSectionHeader>
+        </template>
+
+        <div v-if="notifiers.data.value" class="mx-4 divide-y divide-gray-400 rounded-md border border-gray-400">
+          <article v-for="n in notifiers.data.value" :key="n.id" class="p-2">
+            <div class="flex flex-wrap items-center gap-2">
+              <p class="mr-auto text-lg">{{ n.name }}</p>
+              <div class="flex gap-2 justify-end">
+                <div class="tooltip" data-tip="Delete">
+                  <button class="btn btn-sm btn-square" @click="deleteNotifier(n.id)">
+                    <Icon name="mdi-delete" />
+                  </button>
+                </div>
+                <div class="tooltip" data-tip="Edit">
+                  <button class="btn btn-sm btn-square" @click="openNotifierDialog(n)">
+                    <Icon name="mdi-pencil" />
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div class="flex justify-between py-1 flex-wrap text-sm">
+              <p>
+                <span v-if="n.isActive" class="badge badge-success"> Active </span>
+                <span v-else class="badge badge-error"> Inactive</span>
+              </p>
+              <p>
+                Created
+                <DateTime format="relative" datetime-type="time" :date="n.createdAt" />
+              </p>
+            </div>
+          </article>
+        </div>
+
+        <div class="p-4">
+          <BaseButton size="sm" @click="openNotifierDialog"> Create </BaseButton>
         </div>
       </BaseCard>
 
@@ -246,8 +409,8 @@
           <FormSelect v-model="currency" label="Currency Format" :items="currencies" />
           <p class="m-2 text-sm">Example: {{ currencyExample }}</p>
 
-          <div class="mt-4 flex justify-end">
-            <BaseButton @click="updateGroup"> Update Group </BaseButton>
+          <div class="mt-4">
+            <BaseButton size="sm" @click="updateGroup"> Update Group </BaseButton>
           </div>
         </div>
       </BaseCard>
@@ -306,41 +469,14 @@
       <BaseCard>
         <template #title>
           <BaseSectionHeader>
-            <Icon name="mdi-warning" class="mr-2 -mt-1 text-base-600" />
-            <span class="text-base-600"> Actions </span>
-            <template #description>
-              Apply Actions to your inventory in bulk. These are irreversible actions. Be careful.
-            </template>
-          </BaseSectionHeader>
-
-          <div class="py-4 border-t-2 border-gray-300">
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-10">
-              <div class="col-span-3">
-                <h4>Manage Asset IDs</h4>
-                <p class="text-sm">
-                  Ensures that all items in your inventory have a valid asset_id field. This is done by finding the
-                  highest current asset_id field in the database and applying the next value to each item that has an
-                  unset asset_id field. This is done in order of the created_at field.
-                </p>
-              </div>
-              <BaseButton class="btn-primary mt-auto" @click="ensureAssetIDs"> Ensure Asset IDs </BaseButton>
-            </div>
-          </div>
-        </template>
-      </BaseCard>
-
-      <BaseCard>
-        <template #title>
-          <BaseSectionHeader>
             <Icon name="mdi-delete" class="mr-2 -mt-1 text-base-600" />
             <span class="text-base-600"> Delete Account</span>
-            <template #description> Delete your account and all it's associated data </template>
+            <template #description> Delete your account and all its associated data. </template>
           </BaseSectionHeader>
-
-          <div class="py-4 border-t-2 border-gray-300">
-            <BaseButton class="btn-error" @click="deleteProfile"> Delete Account </BaseButton>
-          </div>
         </template>
+        <div class="p-4 px-6 border-t-2 border-gray-300">
+          <BaseButton size="sm" class="btn-error" @click="deleteProfile"> Delete Account </BaseButton>
+        </div>
       </BaseCard>
     </BaseContainer>
     <footer v-if="status" class="text-center w-full bottom-0 pb-4">

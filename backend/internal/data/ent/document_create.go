@@ -208,13 +208,7 @@ func (dc *DocumentCreate) sqlSave(ctx context.Context) (*Document, error) {
 func (dc *DocumentCreate) createSpec() (*Document, *sqlgraph.CreateSpec) {
 	var (
 		_node = &Document{config: dc.config}
-		_spec = &sqlgraph.CreateSpec{
-			Table: document.Table,
-			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeUUID,
-				Column: document.FieldID,
-			},
-		}
+		_spec = sqlgraph.NewCreateSpec(document.Table, sqlgraph.NewFieldSpec(document.FieldID, field.TypeUUID))
 	)
 	if id, ok := dc.mutation.ID(); ok {
 		_node.ID = id
@@ -244,10 +238,7 @@ func (dc *DocumentCreate) createSpec() (*Document, *sqlgraph.CreateSpec) {
 			Columns: []string{document.GroupColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: group.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(group.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -264,10 +255,7 @@ func (dc *DocumentCreate) createSpec() (*Document, *sqlgraph.CreateSpec) {
 			Columns: []string{document.AttachmentsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: attachment.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(attachment.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

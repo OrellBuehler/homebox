@@ -40,15 +40,7 @@ func (ard *AuthRolesDelete) ExecX(ctx context.Context) int {
 }
 
 func (ard *AuthRolesDelete) sqlExec(ctx context.Context) (int, error) {
-	_spec := &sqlgraph.DeleteSpec{
-		Node: &sqlgraph.NodeSpec{
-			Table: authroles.Table,
-			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeInt,
-				Column: authroles.FieldID,
-			},
-		},
-	}
+	_spec := sqlgraph.NewDeleteSpec(authroles.Table, sqlgraph.NewFieldSpec(authroles.FieldID, field.TypeInt))
 	if ps := ard.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -69,6 +61,12 @@ type AuthRolesDeleteOne struct {
 	ard *AuthRolesDelete
 }
 
+// Where appends a list predicates to the AuthRolesDelete builder.
+func (ardo *AuthRolesDeleteOne) Where(ps ...predicate.AuthRoles) *AuthRolesDeleteOne {
+	ardo.ard.mutation.Where(ps...)
+	return ardo
+}
+
 // Exec executes the deletion query.
 func (ardo *AuthRolesDeleteOne) Exec(ctx context.Context) error {
 	n, err := ardo.ard.Exec(ctx)
@@ -84,5 +82,7 @@ func (ardo *AuthRolesDeleteOne) Exec(ctx context.Context) error {
 
 // ExecX is like Exec, but panics if an error occurs.
 func (ardo *AuthRolesDeleteOne) ExecX(ctx context.Context) {
-	ardo.ard.ExecX(ctx)
+	if err := ardo.Exec(ctx); err != nil {
+		panic(err)
+	}
 }

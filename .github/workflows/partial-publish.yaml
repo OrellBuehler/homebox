@@ -18,9 +18,9 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Set up Go
-        uses: actions/setup-go@v3
+        uses: actions/setup-go@v4
         with:
-          go-version: 1.19
+          go-version: "1.20"
 
       - name: Set up QEMU
         id: qemu
@@ -63,3 +63,16 @@ jobs:
             --build-arg COMMIT=$(git rev-parse HEAD) \
             --build-arg BUILD_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ") \
             --platform linux/amd64,linux/arm64,linux/arm/v7 .
+
+      - name: build release tagged the rootless image
+        if: ${{ inputs.release == true }}
+        run: |
+          docker build --push --no-cache \
+            --tag ghcr.io/hay-kot/homebox:nightly-rootless \
+            --tag ghcr.io/hay-kot/homebox:latest-rootless \
+            --tag ghcr.io/hay-kot/homebox:${{ inputs.tag }}-rootless \
+            --build-arg VERSION=${{ inputs.tag }} \
+            --build-arg COMMIT=$(git rev-parse HEAD) \
+            --build-arg BUILD_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ") \
+            --platform linux/amd64,linux/arm64,linux/arm/v7  \
+            --file Dockerfile.rootless .

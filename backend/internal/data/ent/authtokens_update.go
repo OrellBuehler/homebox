@@ -149,16 +149,7 @@ func (atu *AuthTokensUpdate) defaults() {
 }
 
 func (atu *AuthTokensUpdate) sqlSave(ctx context.Context) (n int, err error) {
-	_spec := &sqlgraph.UpdateSpec{
-		Node: &sqlgraph.NodeSpec{
-			Table:   authtokens.Table,
-			Columns: authtokens.Columns,
-			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeUUID,
-				Column: authtokens.FieldID,
-			},
-		},
-	}
+	_spec := sqlgraph.NewUpdateSpec(authtokens.Table, authtokens.Columns, sqlgraph.NewFieldSpec(authtokens.FieldID, field.TypeUUID))
 	if ps := atu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -183,10 +174,7 @@ func (atu *AuthTokensUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{authtokens.UserColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: user.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -199,10 +187,7 @@ func (atu *AuthTokensUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{authtokens.UserColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: user.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -218,10 +203,7 @@ func (atu *AuthTokensUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{authtokens.RolesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeInt,
-					Column: authroles.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(authroles.FieldID, field.TypeInt),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -234,10 +216,7 @@ func (atu *AuthTokensUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{authtokens.RolesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeInt,
-					Column: authroles.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(authroles.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {
@@ -346,6 +325,12 @@ func (atuo *AuthTokensUpdateOne) ClearRoles() *AuthTokensUpdateOne {
 	return atuo
 }
 
+// Where appends a list predicates to the AuthTokensUpdate builder.
+func (atuo *AuthTokensUpdateOne) Where(ps ...predicate.AuthTokens) *AuthTokensUpdateOne {
+	atuo.mutation.Where(ps...)
+	return atuo
+}
+
 // Select allows selecting one or more fields (columns) of the returned entity.
 // The default is selecting all fields defined in the entity schema.
 func (atuo *AuthTokensUpdateOne) Select(field string, fields ...string) *AuthTokensUpdateOne {
@@ -390,16 +375,7 @@ func (atuo *AuthTokensUpdateOne) defaults() {
 }
 
 func (atuo *AuthTokensUpdateOne) sqlSave(ctx context.Context) (_node *AuthTokens, err error) {
-	_spec := &sqlgraph.UpdateSpec{
-		Node: &sqlgraph.NodeSpec{
-			Table:   authtokens.Table,
-			Columns: authtokens.Columns,
-			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeUUID,
-				Column: authtokens.FieldID,
-			},
-		},
-	}
+	_spec := sqlgraph.NewUpdateSpec(authtokens.Table, authtokens.Columns, sqlgraph.NewFieldSpec(authtokens.FieldID, field.TypeUUID))
 	id, ok := atuo.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "AuthTokens.id" for update`)}
@@ -441,10 +417,7 @@ func (atuo *AuthTokensUpdateOne) sqlSave(ctx context.Context) (_node *AuthTokens
 			Columns: []string{authtokens.UserColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: user.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -457,10 +430,7 @@ func (atuo *AuthTokensUpdateOne) sqlSave(ctx context.Context) (_node *AuthTokens
 			Columns: []string{authtokens.UserColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: user.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -476,10 +446,7 @@ func (atuo *AuthTokensUpdateOne) sqlSave(ctx context.Context) (_node *AuthTokens
 			Columns: []string{authtokens.RolesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeInt,
-					Column: authroles.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(authroles.FieldID, field.TypeInt),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -492,10 +459,7 @@ func (atuo *AuthTokensUpdateOne) sqlSave(ctx context.Context) (_node *AuthTokens
 			Columns: []string{authtokens.RolesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeInt,
-					Column: authroles.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(authroles.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

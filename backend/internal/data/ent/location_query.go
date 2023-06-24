@@ -21,16 +21,13 @@ import (
 // LocationQuery is the builder for querying Location entities.
 type LocationQuery struct {
 	config
-	limit        *int
-	offset       *int
-	unique       *bool
+	ctx          *QueryContext
 	order        []OrderFunc
-	fields       []string
 	inters       []Interceptor
 	predicates   []predicate.Location
+	withGroup    *GroupQuery
 	withParent   *LocationQuery
 	withChildren *LocationQuery
-	withGroup    *GroupQuery
 	withItems    *ItemQuery
 	withFKs      bool
 	// intermediate query (i.e. traversal path).
@@ -46,20 +43,20 @@ func (lq *LocationQuery) Where(ps ...predicate.Location) *LocationQuery {
 
 // Limit the number of records to be returned by this query.
 func (lq *LocationQuery) Limit(limit int) *LocationQuery {
-	lq.limit = &limit
+	lq.ctx.Limit = &limit
 	return lq
 }
 
 // Offset to start from.
 func (lq *LocationQuery) Offset(offset int) *LocationQuery {
-	lq.offset = &offset
+	lq.ctx.Offset = &offset
 	return lq
 }
 
 // Unique configures the query builder to filter duplicate records on query.
 // By default, unique is set to true, and can be disabled using this method.
 func (lq *LocationQuery) Unique(unique bool) *LocationQuery {
-	lq.unique = &unique
+	lq.ctx.Unique = &unique
 	return lq
 }
 
@@ -67,6 +64,28 @@ func (lq *LocationQuery) Unique(unique bool) *LocationQuery {
 func (lq *LocationQuery) Order(o ...OrderFunc) *LocationQuery {
 	lq.order = append(lq.order, o...)
 	return lq
+}
+
+// QueryGroup chains the current query on the "group" edge.
+func (lq *LocationQuery) QueryGroup() *GroupQuery {
+	query := (&GroupClient{config: lq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := lq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := lq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(location.Table, location.FieldID, selector),
+			sqlgraph.To(group.Table, group.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, location.GroupTable, location.GroupColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(lq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
 }
 
 // QueryParent chains the current query on the "parent" edge.
@@ -113,28 +132,6 @@ func (lq *LocationQuery) QueryChildren() *LocationQuery {
 	return query
 }
 
-// QueryGroup chains the current query on the "group" edge.
-func (lq *LocationQuery) QueryGroup() *GroupQuery {
-	query := (&GroupClient{config: lq.config}).Query()
-	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := lq.prepareQuery(ctx); err != nil {
-			return nil, err
-		}
-		selector := lq.sqlQuery(ctx)
-		if err := selector.Err(); err != nil {
-			return nil, err
-		}
-		step := sqlgraph.NewStep(
-			sqlgraph.From(location.Table, location.FieldID, selector),
-			sqlgraph.To(group.Table, group.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, location.GroupTable, location.GroupColumn),
-		)
-		fromU = sqlgraph.SetNeighbors(lq.driver.Dialect(), step)
-		return fromU, nil
-	}
-	return query
-}
-
 // QueryItems chains the current query on the "items" edge.
 func (lq *LocationQuery) QueryItems() *ItemQuery {
 	query := (&ItemClient{config: lq.config}).Query()
@@ -160,7 +157,7 @@ func (lq *LocationQuery) QueryItems() *ItemQuery {
 // First returns the first Location entity from the query.
 // Returns a *NotFoundError when no Location was found.
 func (lq *LocationQuery) First(ctx context.Context) (*Location, error) {
-	nodes, err := lq.Limit(1).All(newQueryContext(ctx, TypeLocation, "First"))
+	nodes, err := lq.Limit(1).All(setContextOp(ctx, lq.ctx, "First"))
 	if err != nil {
 		return nil, err
 	}
@@ -183,7 +180,7 @@ func (lq *LocationQuery) FirstX(ctx context.Context) *Location {
 // Returns a *NotFoundError when no Location ID was found.
 func (lq *LocationQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
 	var ids []uuid.UUID
-	if ids, err = lq.Limit(1).IDs(newQueryContext(ctx, TypeLocation, "FirstID")); err != nil {
+	if ids, err = lq.Limit(1).IDs(setContextOp(ctx, lq.ctx, "FirstID")); err != nil {
 		return
 	}
 	if len(ids) == 0 {
@@ -206,7 +203,7 @@ func (lq *LocationQuery) FirstIDX(ctx context.Context) uuid.UUID {
 // Returns a *NotSingularError when more than one Location entity is found.
 // Returns a *NotFoundError when no Location entities are found.
 func (lq *LocationQuery) Only(ctx context.Context) (*Location, error) {
-	nodes, err := lq.Limit(2).All(newQueryContext(ctx, TypeLocation, "Only"))
+	nodes, err := lq.Limit(2).All(setContextOp(ctx, lq.ctx, "Only"))
 	if err != nil {
 		return nil, err
 	}
@@ -234,7 +231,7 @@ func (lq *LocationQuery) OnlyX(ctx context.Context) *Location {
 // Returns a *NotFoundError when no entities are found.
 func (lq *LocationQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
 	var ids []uuid.UUID
-	if ids, err = lq.Limit(2).IDs(newQueryContext(ctx, TypeLocation, "OnlyID")); err != nil {
+	if ids, err = lq.Limit(2).IDs(setContextOp(ctx, lq.ctx, "OnlyID")); err != nil {
 		return
 	}
 	switch len(ids) {
@@ -259,7 +256,7 @@ func (lq *LocationQuery) OnlyIDX(ctx context.Context) uuid.UUID {
 
 // All executes the query and returns a list of Locations.
 func (lq *LocationQuery) All(ctx context.Context) ([]*Location, error) {
-	ctx = newQueryContext(ctx, TypeLocation, "All")
+	ctx = setContextOp(ctx, lq.ctx, "All")
 	if err := lq.prepareQuery(ctx); err != nil {
 		return nil, err
 	}
@@ -277,10 +274,12 @@ func (lq *LocationQuery) AllX(ctx context.Context) []*Location {
 }
 
 // IDs executes the query and returns a list of Location IDs.
-func (lq *LocationQuery) IDs(ctx context.Context) ([]uuid.UUID, error) {
-	var ids []uuid.UUID
-	ctx = newQueryContext(ctx, TypeLocation, "IDs")
-	if err := lq.Select(location.FieldID).Scan(ctx, &ids); err != nil {
+func (lq *LocationQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
+	if lq.ctx.Unique == nil && lq.path != nil {
+		lq.Unique(true)
+	}
+	ctx = setContextOp(ctx, lq.ctx, "IDs")
+	if err = lq.Select(location.FieldID).Scan(ctx, &ids); err != nil {
 		return nil, err
 	}
 	return ids, nil
@@ -297,7 +296,7 @@ func (lq *LocationQuery) IDsX(ctx context.Context) []uuid.UUID {
 
 // Count returns the count of the given query.
 func (lq *LocationQuery) Count(ctx context.Context) (int, error) {
-	ctx = newQueryContext(ctx, TypeLocation, "Count")
+	ctx = setContextOp(ctx, lq.ctx, "Count")
 	if err := lq.prepareQuery(ctx); err != nil {
 		return 0, err
 	}
@@ -315,7 +314,7 @@ func (lq *LocationQuery) CountX(ctx context.Context) int {
 
 // Exist returns true if the query has elements in the graph.
 func (lq *LocationQuery) Exist(ctx context.Context) (bool, error) {
-	ctx = newQueryContext(ctx, TypeLocation, "Exist")
+	ctx = setContextOp(ctx, lq.ctx, "Exist")
 	switch _, err := lq.FirstID(ctx); {
 	case IsNotFound(err):
 		return false, nil
@@ -343,20 +342,29 @@ func (lq *LocationQuery) Clone() *LocationQuery {
 	}
 	return &LocationQuery{
 		config:       lq.config,
-		limit:        lq.limit,
-		offset:       lq.offset,
+		ctx:          lq.ctx.Clone(),
 		order:        append([]OrderFunc{}, lq.order...),
 		inters:       append([]Interceptor{}, lq.inters...),
 		predicates:   append([]predicate.Location{}, lq.predicates...),
+		withGroup:    lq.withGroup.Clone(),
 		withParent:   lq.withParent.Clone(),
 		withChildren: lq.withChildren.Clone(),
-		withGroup:    lq.withGroup.Clone(),
 		withItems:    lq.withItems.Clone(),
 		// clone intermediate query.
-		sql:    lq.sql.Clone(),
-		path:   lq.path,
-		unique: lq.unique,
+		sql:  lq.sql.Clone(),
+		path: lq.path,
 	}
+}
+
+// WithGroup tells the query-builder to eager-load the nodes that are connected to
+// the "group" edge. The optional arguments are used to configure the query builder of the edge.
+func (lq *LocationQuery) WithGroup(opts ...func(*GroupQuery)) *LocationQuery {
+	query := (&GroupClient{config: lq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	lq.withGroup = query
+	return lq
 }
 
 // WithParent tells the query-builder to eager-load the nodes that are connected to
@@ -378,17 +386,6 @@ func (lq *LocationQuery) WithChildren(opts ...func(*LocationQuery)) *LocationQue
 		opt(query)
 	}
 	lq.withChildren = query
-	return lq
-}
-
-// WithGroup tells the query-builder to eager-load the nodes that are connected to
-// the "group" edge. The optional arguments are used to configure the query builder of the edge.
-func (lq *LocationQuery) WithGroup(opts ...func(*GroupQuery)) *LocationQuery {
-	query := (&GroupClient{config: lq.config}).Query()
-	for _, opt := range opts {
-		opt(query)
-	}
-	lq.withGroup = query
 	return lq
 }
 
@@ -418,9 +415,9 @@ func (lq *LocationQuery) WithItems(opts ...func(*ItemQuery)) *LocationQuery {
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (lq *LocationQuery) GroupBy(field string, fields ...string) *LocationGroupBy {
-	lq.fields = append([]string{field}, fields...)
+	lq.ctx.Fields = append([]string{field}, fields...)
 	grbuild := &LocationGroupBy{build: lq}
-	grbuild.flds = &lq.fields
+	grbuild.flds = &lq.ctx.Fields
 	grbuild.label = location.Label
 	grbuild.scan = grbuild.Scan
 	return grbuild
@@ -439,10 +436,10 @@ func (lq *LocationQuery) GroupBy(field string, fields ...string) *LocationGroupB
 //		Select(location.FieldCreatedAt).
 //		Scan(ctx, &v)
 func (lq *LocationQuery) Select(fields ...string) *LocationSelect {
-	lq.fields = append(lq.fields, fields...)
+	lq.ctx.Fields = append(lq.ctx.Fields, fields...)
 	sbuild := &LocationSelect{LocationQuery: lq}
 	sbuild.label = location.Label
-	sbuild.flds, sbuild.scan = &lq.fields, sbuild.Scan
+	sbuild.flds, sbuild.scan = &lq.ctx.Fields, sbuild.Scan
 	return sbuild
 }
 
@@ -462,7 +459,7 @@ func (lq *LocationQuery) prepareQuery(ctx context.Context) error {
 			}
 		}
 	}
-	for _, f := range lq.fields {
+	for _, f := range lq.ctx.Fields {
 		if !location.ValidColumn(f) {
 			return &ValidationError{Name: f, err: fmt.Errorf("ent: invalid field %q for query", f)}
 		}
@@ -483,13 +480,13 @@ func (lq *LocationQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Loc
 		withFKs     = lq.withFKs
 		_spec       = lq.querySpec()
 		loadedTypes = [4]bool{
+			lq.withGroup != nil,
 			lq.withParent != nil,
 			lq.withChildren != nil,
-			lq.withGroup != nil,
 			lq.withItems != nil,
 		}
 	)
-	if lq.withParent != nil || lq.withGroup != nil {
+	if lq.withGroup != nil || lq.withParent != nil {
 		withFKs = true
 	}
 	if withFKs {
@@ -513,6 +510,12 @@ func (lq *LocationQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Loc
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
+	if query := lq.withGroup; query != nil {
+		if err := lq.loadGroup(ctx, query, nodes, nil,
+			func(n *Location, e *Group) { n.Edges.Group = e }); err != nil {
+			return nil, err
+		}
+	}
 	if query := lq.withParent; query != nil {
 		if err := lq.loadParent(ctx, query, nodes, nil,
 			func(n *Location, e *Location) { n.Edges.Parent = e }); err != nil {
@@ -526,12 +529,6 @@ func (lq *LocationQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Loc
 			return nil, err
 		}
 	}
-	if query := lq.withGroup; query != nil {
-		if err := lq.loadGroup(ctx, query, nodes, nil,
-			func(n *Location, e *Group) { n.Edges.Group = e }); err != nil {
-			return nil, err
-		}
-	}
 	if query := lq.withItems; query != nil {
 		if err := lq.loadItems(ctx, query, nodes,
 			func(n *Location) { n.Edges.Items = []*Item{} },
@@ -542,6 +539,38 @@ func (lq *LocationQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Loc
 	return nodes, nil
 }
 
+func (lq *LocationQuery) loadGroup(ctx context.Context, query *GroupQuery, nodes []*Location, init func(*Location), assign func(*Location, *Group)) error {
+	ids := make([]uuid.UUID, 0, len(nodes))
+	nodeids := make(map[uuid.UUID][]*Location)
+	for i := range nodes {
+		if nodes[i].group_locations == nil {
+			continue
+		}
+		fk := *nodes[i].group_locations
+		if _, ok := nodeids[fk]; !ok {
+			ids = append(ids, fk)
+		}
+		nodeids[fk] = append(nodeids[fk], nodes[i])
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	query.Where(group.IDIn(ids...))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nodeids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "group_locations" returned %v`, n.ID)
+		}
+		for i := range nodes {
+			assign(nodes[i], n)
+		}
+	}
+	return nil
+}
 func (lq *LocationQuery) loadParent(ctx context.Context, query *LocationQuery, nodes []*Location, init func(*Location), assign func(*Location, *Location)) error {
 	ids := make([]uuid.UUID, 0, len(nodes))
 	nodeids := make(map[uuid.UUID][]*Location)
@@ -554,6 +583,9 @@ func (lq *LocationQuery) loadParent(ctx context.Context, query *LocationQuery, n
 			ids = append(ids, fk)
 		}
 		nodeids[fk] = append(nodeids[fk], nodes[i])
+	}
+	if len(ids) == 0 {
+		return nil
 	}
 	query.Where(location.IDIn(ids...))
 	neighbors, err := query.All(ctx)
@@ -602,35 +634,6 @@ func (lq *LocationQuery) loadChildren(ctx context.Context, query *LocationQuery,
 	}
 	return nil
 }
-func (lq *LocationQuery) loadGroup(ctx context.Context, query *GroupQuery, nodes []*Location, init func(*Location), assign func(*Location, *Group)) error {
-	ids := make([]uuid.UUID, 0, len(nodes))
-	nodeids := make(map[uuid.UUID][]*Location)
-	for i := range nodes {
-		if nodes[i].group_locations == nil {
-			continue
-		}
-		fk := *nodes[i].group_locations
-		if _, ok := nodeids[fk]; !ok {
-			ids = append(ids, fk)
-		}
-		nodeids[fk] = append(nodeids[fk], nodes[i])
-	}
-	query.Where(group.IDIn(ids...))
-	neighbors, err := query.All(ctx)
-	if err != nil {
-		return err
-	}
-	for _, n := range neighbors {
-		nodes, ok := nodeids[n.ID]
-		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "group_locations" returned %v`, n.ID)
-		}
-		for i := range nodes {
-			assign(nodes[i], n)
-		}
-	}
-	return nil
-}
 func (lq *LocationQuery) loadItems(ctx context.Context, query *ItemQuery, nodes []*Location, init func(*Location), assign func(*Location, *Item)) error {
 	fks := make([]driver.Value, 0, len(nodes))
 	nodeids := make(map[uuid.UUID]*Location)
@@ -665,30 +668,22 @@ func (lq *LocationQuery) loadItems(ctx context.Context, query *ItemQuery, nodes 
 
 func (lq *LocationQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := lq.querySpec()
-	_spec.Node.Columns = lq.fields
-	if len(lq.fields) > 0 {
-		_spec.Unique = lq.unique != nil && *lq.unique
+	_spec.Node.Columns = lq.ctx.Fields
+	if len(lq.ctx.Fields) > 0 {
+		_spec.Unique = lq.ctx.Unique != nil && *lq.ctx.Unique
 	}
 	return sqlgraph.CountNodes(ctx, lq.driver, _spec)
 }
 
 func (lq *LocationQuery) querySpec() *sqlgraph.QuerySpec {
-	_spec := &sqlgraph.QuerySpec{
-		Node: &sqlgraph.NodeSpec{
-			Table:   location.Table,
-			Columns: location.Columns,
-			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeUUID,
-				Column: location.FieldID,
-			},
-		},
-		From:   lq.sql,
-		Unique: true,
-	}
-	if unique := lq.unique; unique != nil {
+	_spec := sqlgraph.NewQuerySpec(location.Table, location.Columns, sqlgraph.NewFieldSpec(location.FieldID, field.TypeUUID))
+	_spec.From = lq.sql
+	if unique := lq.ctx.Unique; unique != nil {
 		_spec.Unique = *unique
+	} else if lq.path != nil {
+		_spec.Unique = true
 	}
-	if fields := lq.fields; len(fields) > 0 {
+	if fields := lq.ctx.Fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
 		_spec.Node.Columns = append(_spec.Node.Columns, location.FieldID)
 		for i := range fields {
@@ -704,10 +699,10 @@ func (lq *LocationQuery) querySpec() *sqlgraph.QuerySpec {
 			}
 		}
 	}
-	if limit := lq.limit; limit != nil {
+	if limit := lq.ctx.Limit; limit != nil {
 		_spec.Limit = *limit
 	}
-	if offset := lq.offset; offset != nil {
+	if offset := lq.ctx.Offset; offset != nil {
 		_spec.Offset = *offset
 	}
 	if ps := lq.order; len(ps) > 0 {
@@ -723,7 +718,7 @@ func (lq *LocationQuery) querySpec() *sqlgraph.QuerySpec {
 func (lq *LocationQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	builder := sql.Dialect(lq.driver.Dialect())
 	t1 := builder.Table(location.Table)
-	columns := lq.fields
+	columns := lq.ctx.Fields
 	if len(columns) == 0 {
 		columns = location.Columns
 	}
@@ -732,7 +727,7 @@ func (lq *LocationQuery) sqlQuery(ctx context.Context) *sql.Selector {
 		selector = lq.sql
 		selector.Select(selector.Columns(columns...)...)
 	}
-	if lq.unique != nil && *lq.unique {
+	if lq.ctx.Unique != nil && *lq.ctx.Unique {
 		selector.Distinct()
 	}
 	for _, p := range lq.predicates {
@@ -741,12 +736,12 @@ func (lq *LocationQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	for _, p := range lq.order {
 		p(selector)
 	}
-	if offset := lq.offset; offset != nil {
+	if offset := lq.ctx.Offset; offset != nil {
 		// limit is mandatory for offset clause. We start
 		// with default value, and override it below if needed.
 		selector.Offset(*offset).Limit(math.MaxInt32)
 	}
-	if limit := lq.limit; limit != nil {
+	if limit := lq.ctx.Limit; limit != nil {
 		selector.Limit(*limit)
 	}
 	return selector
@@ -766,7 +761,7 @@ func (lgb *LocationGroupBy) Aggregate(fns ...AggregateFunc) *LocationGroupBy {
 
 // Scan applies the selector query and scans the result into the given value.
 func (lgb *LocationGroupBy) Scan(ctx context.Context, v any) error {
-	ctx = newQueryContext(ctx, TypeLocation, "GroupBy")
+	ctx = setContextOp(ctx, lgb.build.ctx, "GroupBy")
 	if err := lgb.build.prepareQuery(ctx); err != nil {
 		return err
 	}
@@ -814,7 +809,7 @@ func (ls *LocationSelect) Aggregate(fns ...AggregateFunc) *LocationSelect {
 
 // Scan applies the selector query and scans the result into the given value.
 func (ls *LocationSelect) Scan(ctx context.Context, v any) error {
-	ctx = newQueryContext(ctx, TypeLocation, "Select")
+	ctx = setContextOp(ctx, ls.ctx, "Select")
 	if err := ls.prepareQuery(ctx); err != nil {
 		return err
 	}

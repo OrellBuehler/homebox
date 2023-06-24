@@ -85,6 +85,17 @@ func (lc *LocationCreate) SetNillableID(u *uuid.UUID) *LocationCreate {
 	return lc
 }
 
+// SetGroupID sets the "group" edge to the Group entity by ID.
+func (lc *LocationCreate) SetGroupID(id uuid.UUID) *LocationCreate {
+	lc.mutation.SetGroupID(id)
+	return lc
+}
+
+// SetGroup sets the "group" edge to the Group entity.
+func (lc *LocationCreate) SetGroup(g *Group) *LocationCreate {
+	return lc.SetGroupID(g.ID)
+}
+
 // SetParentID sets the "parent" edge to the Location entity by ID.
 func (lc *LocationCreate) SetParentID(id uuid.UUID) *LocationCreate {
 	lc.mutation.SetParentID(id)
@@ -117,17 +128,6 @@ func (lc *LocationCreate) AddChildren(l ...*Location) *LocationCreate {
 		ids[i] = l[i].ID
 	}
 	return lc.AddChildIDs(ids...)
-}
-
-// SetGroupID sets the "group" edge to the Group entity by ID.
-func (lc *LocationCreate) SetGroupID(id uuid.UUID) *LocationCreate {
-	lc.mutation.SetGroupID(id)
-	return lc
-}
-
-// SetGroup sets the "group" edge to the Group entity.
-func (lc *LocationCreate) SetGroup(g *Group) *LocationCreate {
-	return lc.SetGroupID(g.ID)
 }
 
 // AddItemIDs adds the "items" edge to the Item entity by IDs.
@@ -247,13 +247,7 @@ func (lc *LocationCreate) sqlSave(ctx context.Context) (*Location, error) {
 func (lc *LocationCreate) createSpec() (*Location, *sqlgraph.CreateSpec) {
 	var (
 		_node = &Location{config: lc.config}
-		_spec = &sqlgraph.CreateSpec{
-			Table: location.Table,
-			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeUUID,
-				Column: location.FieldID,
-			},
-		}
+		_spec = sqlgraph.NewCreateSpec(location.Table, sqlgraph.NewFieldSpec(location.FieldID, field.TypeUUID))
 	)
 	if id, ok := lc.mutation.ID(); ok {
 		_node.ID = id
@@ -275,6 +269,23 @@ func (lc *LocationCreate) createSpec() (*Location, *sqlgraph.CreateSpec) {
 		_spec.SetField(location.FieldDescription, field.TypeString, value)
 		_node.Description = value
 	}
+	if nodes := lc.mutation.GroupIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   location.GroupTable,
+			Columns: []string{location.GroupColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(group.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.group_locations = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
 	if nodes := lc.mutation.ParentIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -283,10 +294,7 @@ func (lc *LocationCreate) createSpec() (*Location, *sqlgraph.CreateSpec) {
 			Columns: []string{location.ParentColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: location.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(location.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -303,35 +311,12 @@ func (lc *LocationCreate) createSpec() (*Location, *sqlgraph.CreateSpec) {
 			Columns: []string{location.ChildrenColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: location.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(location.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_spec.Edges = append(_spec.Edges, edge)
-	}
-	if nodes := lc.mutation.GroupIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   location.GroupTable,
-			Columns: []string{location.GroupColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: group.FieldID,
-				},
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_node.group_locations = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := lc.mutation.ItemsIDs(); len(nodes) > 0 {
@@ -342,10 +327,7 @@ func (lc *LocationCreate) createSpec() (*Location, *sqlgraph.CreateSpec) {
 			Columns: []string{location.ItemsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: item.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(item.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

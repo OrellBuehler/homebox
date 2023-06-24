@@ -3,10 +3,10 @@ export enum Method {
   POST = "POST",
   PUT = "PUT",
   DELETE = "DELETE",
+  PATCH = "PATCH",
 }
 
-export type RequestInterceptor = (r: Response) => void;
-export type ResponseInterceptor = (r: Response) => void;
+export type ResponseInterceptor = (r: Response, rq?: RequestInit) => void;
 
 export interface TResponse<T> {
   status: number;
@@ -32,8 +32,8 @@ export class Requests {
     this.responseInterceptors.push(interceptor);
   }
 
-  private callResponseInterceptors(response: Response) {
-    this.responseInterceptors.forEach(i => i(response));
+  private callResponseInterceptors(response: Response, request?: RequestInit) {
+    this.responseInterceptors.forEach(i => i(response, request));
   }
 
   private url(rest: string): string {
@@ -58,12 +58,16 @@ export class Requests {
     return this.do<U>(Method.PUT, args);
   }
 
+  public patch<T, U>(args: RequestArgs<T>): Promise<TResponse<U>> {
+    return this.do<U>(Method.PATCH, args);
+  }
+
   public delete<T>(args: RequestArgs<T>): Promise<TResponse<T>> {
     return this.do<T>(Method.DELETE, args);
   }
 
   private methodSupportsBody(method: Method): boolean {
-    return method === Method.POST || method === Method.PUT;
+    return method === Method.POST || method === Method.PUT || method === Method.PATCH;
   }
 
   private async do<T>(method: Method, rargs: RequestArgs<unknown>): Promise<TResponse<T>> {
@@ -77,6 +81,7 @@ export class Requests {
 
     const token = this.token();
     if (token !== "" && payload.headers !== undefined) {
+      // @ts-expect-error - we know that the header is there
       payload.headers["Authorization"] = token; // eslint-disable-line dot-notation
     }
 
@@ -84,13 +89,14 @@ export class Requests {
       if (rargs.data) {
         payload.body = rargs.data;
       } else {
+        // @ts-expect-error - we know that the header is there
         payload.headers["Content-Type"] = "application/json";
         payload.body = JSON.stringify(rargs.body);
       }
     }
 
     const response = await fetch(this.url(rargs.url), payload);
-    this.callResponseInterceptors(response);
+    this.callResponseInterceptors(response, payload);
 
     const data: T = await (async () => {
       if (response.status === 204) {

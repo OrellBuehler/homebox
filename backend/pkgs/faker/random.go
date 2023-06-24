@@ -7,11 +7,9 @@ import (
 
 var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 
-type Faker struct {
-}
+type Faker struct{}
 
 func NewFaker() *Faker {
-	rand.Seed(time.Now().UnixNano())
 	return &Faker{}
 }
 
@@ -20,7 +18,6 @@ func (f *Faker) Time() time.Time {
 }
 
 func (f *Faker) Str(length int) string {
-
 	b := make([]rune, length)
 	for i := range b {
 		b[i] = letters[rand.Intn(len(letters))]

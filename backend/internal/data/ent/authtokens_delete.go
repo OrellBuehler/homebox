@@ -40,15 +40,7 @@ func (atd *AuthTokensDelete) ExecX(ctx context.Context) int {
 }
 
 func (atd *AuthTokensDelete) sqlExec(ctx context.Context) (int, error) {
-	_spec := &sqlgraph.DeleteSpec{
-		Node: &sqlgraph.NodeSpec{
-			Table: authtokens.Table,
-			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeUUID,
-				Column: authtokens.FieldID,
-			},
-		},
-	}
+	_spec := sqlgraph.NewDeleteSpec(authtokens.Table, sqlgraph.NewFieldSpec(authtokens.FieldID, field.TypeUUID))
 	if ps := atd.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -69,6 +61,12 @@ type AuthTokensDeleteOne struct {
 	atd *AuthTokensDelete
 }
 
+// Where appends a list predicates to the AuthTokensDelete builder.
+func (atdo *AuthTokensDeleteOne) Where(ps ...predicate.AuthTokens) *AuthTokensDeleteOne {
+	atdo.atd.mutation.Where(ps...)
+	return atdo
+}
+
 // Exec executes the deletion query.
 func (atdo *AuthTokensDeleteOne) Exec(ctx context.Context) error {
 	n, err := atdo.atd.Exec(ctx)
@@ -84,5 +82,7 @@ func (atdo *AuthTokensDeleteOne) Exec(ctx context.Context) error {
 
 // ExecX is like Exec, but panics if an error occurs.
 func (atdo *AuthTokensDeleteOne) ExecX(ctx context.Context) {
-	atdo.atd.ExecX(ctx)
+	if err := atdo.Exec(ctx); err != nil {
+		panic(err)
+	}
 }

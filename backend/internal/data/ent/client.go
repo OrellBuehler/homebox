@@ -11,6 +11,10 @@ import (
 	"github.com/google/uuid"
 	"github.com/thechosenlan/homebox/backend/internal/data/ent/migrate"
 
+	"entgo.io/ent"
+	"entgo.io/ent/dialect"
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/thechosenlan/homebox/backend/internal/data/ent/attachment"
 	"github.com/thechosenlan/homebox/backend/internal/data/ent/authroles"
 	"github.com/thechosenlan/homebox/backend/internal/data/ent/authtokens"
@@ -22,11 +26,8 @@ import (
 	"github.com/thechosenlan/homebox/backend/internal/data/ent/label"
 	"github.com/thechosenlan/homebox/backend/internal/data/ent/location"
 	"github.com/thechosenlan/homebox/backend/internal/data/ent/maintenanceentry"
+	"github.com/thechosenlan/homebox/backend/internal/data/ent/notifier"
 	"github.com/thechosenlan/homebox/backend/internal/data/ent/user"
-
-	"entgo.io/ent/dialect"
-	"entgo.io/ent/dialect/sql"
-	"entgo.io/ent/dialect/sql/sqlgraph"
 )
 
 // Client is the client that holds all ent builders.
@@ -56,6 +57,8 @@ type Client struct {
 	Location *LocationClient
 	// MaintenanceEntry is the client for interacting with the MaintenanceEntry builders.
 	MaintenanceEntry *MaintenanceEntryClient
+	// Notifier is the client for interacting with the Notifier builders.
+	Notifier *NotifierClient
 	// User is the client for interacting with the User builders.
 	User *UserClient
 }
@@ -82,7 +85,57 @@ func (c *Client) init() {
 	c.Label = NewLabelClient(c.config)
 	c.Location = NewLocationClient(c.config)
 	c.MaintenanceEntry = NewMaintenanceEntryClient(c.config)
+	c.Notifier = NewNotifierClient(c.config)
 	c.User = NewUserClient(c.config)
+}
+
+type (
+	// config is the configuration for the client and its builder.
+	config struct {
+		// driver used for executing database requests.
+		driver dialect.Driver
+		// debug enable a debug logging.
+		debug bool
+		// log used for logging on debug mode.
+		log func(...any)
+		// hooks to execute on mutations.
+		hooks *hooks
+		// interceptors to execute on queries.
+		inters *inters
+	}
+	// Option function to configure the client.
+	Option func(*config)
+)
+
+// options applies the options on the config object.
+func (c *config) options(opts ...Option) {
+	for _, opt := range opts {
+		opt(c)
+	}
+	if c.debug {
+		c.driver = dialect.Debug(c.driver, c.log)
+	}
+}
+
+// Debug enables debug logging on the ent.Driver.
+func Debug() Option {
+	return func(c *config) {
+		c.debug = true
+	}
+}
+
+// Log sets the logging function for debug mode.
+func Log(fn func(...any)) Option {
+	return func(c *config) {
+		c.log = fn
+	}
+}
+
+// Driver configures the client driver.
+func Driver(driver dialect.Driver) Option {
+	return func(c *config) {
+		c.driver = driver
+	}
 }
 
 // Open opens a database/sql.DB specified by the driver name and
@@ -127,6 +180,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		Label:                NewLabelClient(cfg),
 		Location:             NewLocationClient(cfg),
 		MaintenanceEntry:     NewMaintenanceEntryClient(cfg),
+		Notifier:             NewNotifierClient(cfg),
 		User:                 NewUserClient(cfg),
 	}, nil
 }
@@ -158,6 +212,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		Label:                NewLabelClient(cfg),
 		Location:             NewLocationClient(cfg),
 		MaintenanceEntry:     NewMaintenanceEntryClient(cfg),
+		Notifier:             NewNotifierClient(cfg),
 		User:                 NewUserClient(cfg),
 	}, nil
 }
@@ -187,35 +242,25 @@ func (c *Client) Close() error {
 // Use adds the mutation hooks to all the entity clients.
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
-	c.Attachment.Use(hooks...)
-	c.AuthRoles.Use(hooks...)
-	c.AuthTokens.Use(hooks...)
-	c.Document.Use(hooks...)
-	c.Group.Use(hooks...)
-	c.GroupInvitationToken.Use(hooks...)
-	c.Item.Use(hooks...)
-	c.ItemField.Use(hooks...)
-	c.Label.Use(hooks...)
-	c.Location.Use(hooks...)
-	c.MaintenanceEntry.Use(hooks...)
-	c.User.Use(hooks...)
+	for _, n := range []interface{ Use(...Hook) }{
+		c.Attachment, c.AuthRoles, c.AuthTokens, c.Document, c.Group,
+		c.GroupInvitationToken, c.Item, c.ItemField, c.Label, c.Location,
+		c.MaintenanceEntry, c.Notifier, c.User,
+	} {
+		n.Use(hooks...)
+	}
 }
 
 // Intercept adds the query interceptors to all the entity clients.
 // In order to add interceptors to a specific client, call: `client.Node.Intercept(...)`.
 func (c *Client) Intercept(interceptors ...Interceptor) {
-	c.Attachment.Intercept(interceptors...)
-	c.AuthRoles.Intercept(interceptors...)
-	c.AuthTokens.Intercept(interceptors...)
-	c.Document.Intercept(interceptors...)
-	c.Group.Intercept(interceptors...)
-	c.GroupInvitationToken.Intercept(interceptors...)
-	c.Item.Intercept(interceptors...)
-	c.ItemField.Intercept(interceptors...)
-	c.Label.Intercept(interceptors...)
-	c.Location.Intercept(interceptors...)
-	c.MaintenanceEntry.Intercept(interceptors...)
-	c.User.Intercept(interceptors...)
+	for _, n := range []interface{ Intercept(...Interceptor) }{
+		c.Attachment, c.AuthRoles, c.AuthTokens, c.Document, c.Group,
+		c.GroupInvitationToken, c.Item, c.ItemField, c.Label, c.Location,
+		c.MaintenanceEntry, c.Notifier, c.User,
+	} {
+		n.Intercept(interceptors...)
+	}
 }
 
 // Mutate implements the ent.Mutator interface.
@@ -243,6 +288,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.Location.mutate(ctx, m)
 	case *MaintenanceEntryMutation:
 		return c.MaintenanceEntry.mutate(ctx, m)
+	case *NotifierMutation:
+		return c.Notifier.mutate(ctx, m)
 	case *UserMutation:
 		return c.User.mutate(ctx, m)
 	default:
@@ -266,7 +313,7 @@ func (c *AttachmentClient) Use(hooks ...Hook) {
 	c.hooks.Attachment = append(c.hooks.Attachment, hooks...)
 }
 
-// Use adds a list of query interceptors to the interceptors stack.
+// Intercept adds a list of query interceptors to the interceptors stack.
 // A call to `Intercept(f, g, h)` equals to `attachment.Intercept(f(g(h())))`.
 func (c *AttachmentClient) Intercept(interceptors ...Interceptor) {
 	c.inters.Attachment = append(c.inters.Attachment, interceptors...)
@@ -324,6 +371,7 @@ func (c *AttachmentClient) DeleteOneID(id uuid.UUID) *AttachmentDeleteOne {
 func (c *AttachmentClient) Query() *AttachmentQuery {
 	return &AttachmentQuery{
 		config: c.config,
+		ctx:    &QueryContext{Type: TypeAttachment},
 		inters: c.Interceptors(),
 	}
 }
@@ -415,7 +463,7 @@ func (c *AuthRolesClient) Use(hooks ...Hook) {
 	c.hooks.AuthRoles = append(c.hooks.AuthRoles, hooks...)
 }
 
-// Use adds a list of query interceptors to the interceptors stack.
+// Intercept adds a list of query interceptors to the interceptors stack.
 // A call to `Intercept(f, g, h)` equals to `authroles.Intercept(f(g(h())))`.
 func (c *AuthRolesClient) Intercept(interceptors ...Interceptor) {
 	c.inters.AuthRoles = append(c.inters.AuthRoles, interceptors...)
@@ -473,6 +521,7 @@ func (c *AuthRolesClient) DeleteOneID(id int) *AuthRolesDeleteOne {
 func (c *AuthRolesClient) Query() *AuthRolesQuery {
 	return &AuthRolesQuery{
 		config: c.config,
+		ctx:    &QueryContext{Type: TypeAuthRoles},
 		inters: c.Interceptors(),
 	}
 }
@@ -548,7 +597,7 @@ func (c *AuthTokensClient) Use(hooks ...Hook) {
 	c.hooks.AuthTokens = append(c.hooks.AuthTokens, hooks...)
 }
 
-// Use adds a list of query interceptors to the interceptors stack.
+// Intercept adds a list of query interceptors to the interceptors stack.
 // A call to `Intercept(f, g, h)` equals to `authtokens.Intercept(f(g(h())))`.
 func (c *AuthTokensClient) Intercept(interceptors ...Interceptor) {
 	c.inters.AuthTokens = append(c.inters.AuthTokens, interceptors...)
@@ -606,6 +655,7 @@ func (c *AuthTokensClient) DeleteOneID(id uuid.UUID) *AuthTokensDeleteOne {
 func (c *AuthTokensClient) Query() *AuthTokensQuery {
 	return &AuthTokensQuery{
 		config: c.config,
+		ctx:    &QueryContext{Type: TypeAuthTokens},
 		inters: c.Interceptors(),
 	}
 }
@@ -697,7 +747,7 @@ func (c *DocumentClient) Use(hooks ...Hook) {
 	c.hooks.Document = append(c.hooks.Document, hooks...)
 }
 
-// Use adds a list of query interceptors to the interceptors stack.
+// Intercept adds a list of query interceptors to the interceptors stack.
 // A call to `Intercept(f, g, h)` equals to `document.Intercept(f(g(h())))`.
 func (c *DocumentClient) Intercept(interceptors ...Interceptor) {
 	c.inters.Document = append(c.inters.Document, interceptors...)
@@ -755,6 +805,7 @@ func (c *DocumentClient) DeleteOneID(id uuid.UUID) *DocumentDeleteOne {
 func (c *DocumentClient) Query() *DocumentQuery {
 	return &DocumentQuery{
 		config: c.config,
+		ctx:    &QueryContext{Type: TypeDocument},
 		inters: c.Interceptors(),
 	}
 }
@@ -846,7 +897,7 @@ func (c *GroupClient) Use(hooks ...Hook) {
 	c.hooks.Group = append(c.hooks.Group, hooks...)
 }
 
-// Use adds a list of query interceptors to the interceptors stack.
+// Intercept adds a list of query interceptors to the interceptors stack.
 // A call to `Intercept(f, g, h)` equals to `group.Intercept(f(g(h())))`.
 func (c *GroupClient) Intercept(interceptors ...Interceptor) {
 	c.inters.Group = append(c.inters.Group, interceptors...)
@@ -904,6 +955,7 @@ func (c *GroupClient) DeleteOneID(id uuid.UUID) *GroupDeleteOne {
 func (c *GroupClient) Query() *GroupQuery {
 	return &GroupQuery{
 		config: c.config,
+		ctx:    &QueryContext{Type: TypeGroup},
 		inters: c.Interceptors(),
 	}
 }
@@ -1018,6 +1070,22 @@ func (c *GroupClient) QueryInvitationTokens(gr *Group) *GroupInvitationTokenQuer
 	return query
 }
 
+// QueryNotifiers queries the notifiers edge of a Group.
+func (c *GroupClient) QueryNotifiers(gr *Group) *NotifierQuery {
+	query := (&NotifierClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := gr.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(group.Table, group.FieldID, id),
+			sqlgraph.To(notifier.Table, notifier.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, group.NotifiersTable, group.NotifiersColumn),
+		)
+		fromV = sqlgraph.Neighbors(gr.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *GroupClient) Hooks() []Hook {
 	return c.hooks.Group
@@ -1059,7 +1127,7 @@ func (c *GroupInvitationTokenClient) Use(hooks ...Hook) {
 	c.hooks.GroupInvitationToken = append(c.hooks.GroupInvitationToken, hooks...)
 }
 
-// Use adds a list of query interceptors to the interceptors stack.
+// Intercept adds a list of query interceptors to the interceptors stack.
 // A call to `Intercept(f, g, h)` equals to `groupinvitationtoken.Intercept(f(g(h())))`.
 func (c *GroupInvitationTokenClient) Intercept(interceptors ...Interceptor) {
 	c.inters.GroupInvitationToken = append(c.inters.GroupInvitationToken, interceptors...)
@@ -1117,6 +1185,7 @@ func (c *GroupInvitationTokenClient) DeleteOneID(id uuid.UUID) *GroupInvitationT
 func (c *GroupInvitationTokenClient) Query() *GroupInvitationTokenQuery {
 	return &GroupInvitationTokenQuery{
 		config: c.config,
+		ctx:    &QueryContext{Type: TypeGroupInvitationToken},
 		inters: c.Interceptors(),
 	}
 }
@@ -1192,7 +1261,7 @@ func (c *ItemClient) Use(hooks ...Hook) {
 	c.hooks.Item = append(c.hooks.Item, hooks...)
 }
 
-// Use adds a list of query interceptors to the interceptors stack.
+// Intercept adds a list of query interceptors to the interceptors stack.
 // A call to `Intercept(f, g, h)` equals to `item.Intercept(f(g(h())))`.
 func (c *ItemClient) Intercept(interceptors ...Interceptor) {
 	c.inters.Item = append(c.inters.Item, interceptors...)
@@ -1250,6 +1319,7 @@ func (c *ItemClient) DeleteOneID(id uuid.UUID) *ItemDeleteOne {
 func (c *ItemClient) Query() *ItemQuery {
 	return &ItemQuery{
 		config: c.config,
+		ctx:    &QueryContext{Type: TypeItem},
 		inters: c.Interceptors(),
 	}
 }
@@ -1266,6 +1336,22 @@ func (c *ItemClient) GetX(ctx context.Context, id uuid.UUID) *Item {
 		panic(err)
 	}
 	return obj
+}
+
+// QueryGroup queries the group edge of a Item.
+func (c *ItemClient) QueryGroup(i *Item) *GroupQuery {
+	query := (&GroupClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := i.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(item.Table, item.FieldID, id),
+			sqlgraph.To(group.Table, group.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, item.GroupTable, item.GroupColumn),
+		)
+		fromV = sqlgraph.Neighbors(i.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
 }
 
 // QueryParent queries the parent edge of a Item.
@@ -1293,22 +1379,6 @@ func (c *ItemClient) QueryChildren(i *Item) *ItemQuery {
 			sqlgraph.From(item.Table, item.FieldID, id),
 			sqlgraph.To(item.Table, item.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, item.ChildrenTable, item.ChildrenColumn),
-		)
-		fromV = sqlgraph.Neighbors(i.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// QueryGroup queries the group edge of a Item.
-func (c *ItemClient) QueryGroup(i *Item) *GroupQuery {
-	query := (&GroupClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := i.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(item.Table, item.FieldID, id),
-			sqlgraph.To(group.Table, group.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, item.GroupTable, item.GroupColumn),
 		)
 		fromV = sqlgraph.Neighbors(i.driver.Dialect(), step)
 		return fromV, nil
@@ -1437,7 +1507,7 @@ func (c *ItemFieldClient) Use(hooks ...Hook) {
 	c.hooks.ItemField = append(c.hooks.ItemField, hooks...)
 }
 
-// Use adds a list of query interceptors to the interceptors stack.
+// Intercept adds a list of query interceptors to the interceptors stack.
 // A call to `Intercept(f, g, h)` equals to `itemfield.Intercept(f(g(h())))`.
 func (c *ItemFieldClient) Intercept(interceptors ...Interceptor) {
 	c.inters.ItemField = append(c.inters.ItemField, interceptors...)
@@ -1495,6 +1565,7 @@ func (c *ItemFieldClient) DeleteOneID(id uuid.UUID) *ItemFieldDeleteOne {
 func (c *ItemFieldClient) Query() *ItemFieldQuery {
 	return &ItemFieldQuery{
 		config: c.config,
+		ctx:    &QueryContext{Type: TypeItemField},
 		inters: c.Interceptors(),
 	}
 }
@@ -1570,7 +1641,7 @@ func (c *LabelClient) Use(hooks ...Hook) {
 	c.hooks.Label = append(c.hooks.Label, hooks...)
 }
 
-// Use adds a list of query interceptors to the interceptors stack.
+// Intercept adds a list of query interceptors to the interceptors stack.
 // A call to `Intercept(f, g, h)` equals to `label.Intercept(f(g(h())))`.
 func (c *LabelClient) Intercept(interceptors ...Interceptor) {
 	c.inters.Label = append(c.inters.Label, interceptors...)
@@ -1628,6 +1699,7 @@ func (c *LabelClient) DeleteOneID(id uuid.UUID) *LabelDeleteOne {
 func (c *LabelClient) Query() *LabelQuery {
 	return &LabelQuery{
 		config: c.config,
+		ctx:    &QueryContext{Type: TypeLabel},
 		inters: c.Interceptors(),
 	}
 }
@@ -1719,7 +1791,7 @@ func (c *LocationClient) Use(hooks ...Hook) {
 	c.hooks.Location = append(c.hooks.Location, hooks...)
 }
 
-// Use adds a list of query interceptors to the interceptors stack.
+// Intercept adds a list of query interceptors to the interceptors stack.
 // A call to `Intercept(f, g, h)` equals to `location.Intercept(f(g(h())))`.
 func (c *LocationClient) Intercept(interceptors ...Interceptor) {
 	c.inters.Location = append(c.inters.Location, interceptors...)
@@ -1777,6 +1849,7 @@ func (c *LocationClient) DeleteOneID(id uuid.UUID) *LocationDeleteOne {
 func (c *LocationClient) Query() *LocationQuery {
 	return &LocationQuery{
 		config: c.config,
+		ctx:    &QueryContext{Type: TypeLocation},
 		inters: c.Interceptors(),
 	}
 }
@@ -1793,6 +1866,22 @@ func (c *LocationClient) GetX(ctx context.Context, id uuid.UUID) *Location {
 		panic(err)
 	}
 	return obj
+}
+
+// QueryGroup queries the group edge of a Location.
+func (c *LocationClient) QueryGroup(l *Location) *GroupQuery {
+	query := (&GroupClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := l.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(location.Table, location.FieldID, id),
+			sqlgraph.To(group.Table, group.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, location.GroupTable, location.GroupColumn),
+		)
+		fromV = sqlgraph.Neighbors(l.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
 }
 
 // QueryParent queries the parent edge of a Location.
@@ -1820,22 +1909,6 @@ func (c *LocationClient) QueryChildren(l *Location) *LocationQuery {
 			sqlgraph.From(location.Table, location.FieldID, id),
 			sqlgraph.To(location.Table, location.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, location.ChildrenTable, location.ChildrenColumn),
-		)
-		fromV = sqlgraph.Neighbors(l.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// QueryGroup queries the group edge of a Location.
-func (c *LocationClient) QueryGroup(l *Location) *GroupQuery {
-	query := (&GroupClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := l.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(location.Table, location.FieldID, id),
-			sqlgraph.To(group.Table, group.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, location.GroupTable, location.GroupColumn),
 		)
 		fromV = sqlgraph.Neighbors(l.driver.Dialect(), step)
 		return fromV, nil
@@ -1900,7 +1973,7 @@ func (c *MaintenanceEntryClient) Use(hooks ...Hook) {
 	c.hooks.MaintenanceEntry = append(c.hooks.MaintenanceEntry, hooks...)
 }
 
-// Use adds a list of query interceptors to the interceptors stack.
+// Intercept adds a list of query interceptors to the interceptors stack.
 // A call to `Intercept(f, g, h)` equals to `maintenanceentry.Intercept(f(g(h())))`.
 func (c *MaintenanceEntryClient) Intercept(interceptors ...Interceptor) {
 	c.inters.MaintenanceEntry = append(c.inters.MaintenanceEntry, interceptors...)
@@ -1958,6 +2031,7 @@ func (c *MaintenanceEntryClient) DeleteOneID(id uuid.UUID) *MaintenanceEntryDele
 func (c *MaintenanceEntryClient) Query() *MaintenanceEntryQuery {
 	return &MaintenanceEntryQuery{
 		config: c.config,
+		ctx:    &QueryContext{Type: TypeMaintenanceEntry},
 		inters: c.Interceptors(),
 	}
 }
@@ -2017,6 +2091,156 @@ func (c *MaintenanceEntryClient) mutate(ctx context.Context, m *MaintenanceEntry
 	}
 }
 
+// NotifierClient is a client for the Notifier schema.
+type NotifierClient struct {
+	config
+}
+
+// NewNotifierClient returns a client for the Notifier from the given config.
+func NewNotifierClient(c config) *NotifierClient {
+	return &NotifierClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `notifier.Hooks(f(g(h())))`.
+func (c *NotifierClient) Use(hooks ...Hook) {
+	c.hooks.Notifier = append(c.hooks.Notifier, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `notifier.Intercept(f(g(h())))`.
+func (c *NotifierClient) Intercept(interceptors ...Interceptor) {
+	c.inters.Notifier = append(c.inters.Notifier, interceptors...)
+}
+
+// Create returns a builder for creating a Notifier entity.
+func (c *NotifierClient) Create() *NotifierCreate {
+	mutation := newNotifierMutation(c.config, OpCreate)
+	return &NotifierCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Notifier entities.
+func (c *NotifierClient) CreateBulk(builders ...*NotifierCreate) *NotifierCreateBulk {
+	return &NotifierCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Notifier.
+func (c *NotifierClient) Update() *NotifierUpdate {
+	mutation := newNotifierMutation(c.config, OpUpdate)
+	return &NotifierUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *NotifierClient) UpdateOne(n *Notifier) *NotifierUpdateOne {
+	mutation := newNotifierMutation(c.config, OpUpdateOne, withNotifier(n))
+	return &NotifierUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *NotifierClient) UpdateOneID(id uuid.UUID) *NotifierUpdateOne {
+	mutation := newNotifierMutation(c.config, OpUpdateOne, withNotifierID(id))
+	return &NotifierUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Notifier.
+func (c *NotifierClient) Delete() *NotifierDelete {
+	mutation := newNotifierMutation(c.config, OpDelete)
+	return &NotifierDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *NotifierClient) DeleteOne(n *Notifier) *NotifierDeleteOne {
+	return c.DeleteOneID(n.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *NotifierClient) DeleteOneID(id uuid.UUID) *NotifierDeleteOne {
+	builder := c.Delete().Where(notifier.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &NotifierDeleteOne{builder}
+}
+
+// Query returns a query builder for Notifier.
+func (c *NotifierClient) Query() *NotifierQuery {
+	return &NotifierQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeNotifier},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a Notifier entity by its id.
+func (c *NotifierClient) Get(ctx context.Context, id uuid.UUID) (*Notifier, error) {
+	return c.Query().Where(notifier.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *NotifierClient) GetX(ctx context.Context, id uuid.UUID) *Notifier {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryGroup queries the group edge of a Notifier.
+func (c *NotifierClient) QueryGroup(n *Notifier) *GroupQuery {
+	query := (&GroupClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := n.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(notifier.Table, notifier.FieldID, id),
+			sqlgraph.To(group.Table, group.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, notifier.GroupTable, notifier.GroupColumn),
+		)
+		fromV = sqlgraph.Neighbors(n.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryUser queries the user edge of a Notifier.
+func (c *NotifierClient) QueryUser(n *Notifier) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := n.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(notifier.Table, notifier.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, notifier.UserTable, notifier.UserColumn),
+		)
+		fromV = sqlgraph.Neighbors(n.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *NotifierClient) Hooks() []Hook {
+	return c.hooks.Notifier
+}
+
+// Interceptors returns the client interceptors.
+func (c *NotifierClient) Interceptors() []Interceptor {
+	return c.inters.Notifier
+}
+
+func (c *NotifierClient) mutate(ctx context.Context, m *NotifierMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&NotifierCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&NotifierUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&NotifierUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&NotifierDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown Notifier mutation op: %q", m.Op())
+	}
+}
+
 // UserClient is a client for the User schema.
 type UserClient struct {
 	config
@@ -2033,7 +2257,7 @@ func (c *UserClient) Use(hooks ...Hook) {
 	c.hooks.User = append(c.hooks.User, hooks...)
 }
 
-// Use adds a list of query interceptors to the interceptors stack.
+// Intercept adds a list of query interceptors to the interceptors stack.
 // A call to `Intercept(f, g, h)` equals to `user.Intercept(f(g(h())))`.
 func (c *UserClient) Intercept(interceptors ...Interceptor) {
 	c.inters.User = append(c.inters.User, interceptors...)
@@ -2091,6 +2315,7 @@ func (c *UserClient) DeleteOneID(id uuid.UUID) *UserDeleteOne {
 func (c *UserClient) Query() *UserQuery {
 	return &UserQuery{
 		config: c.config,
+		ctx:    &QueryContext{Type: TypeUser},
 		inters: c.Interceptors(),
 	}
 }
@@ -2141,6 +2366,22 @@ func (c *UserClient) QueryAuthTokens(u *User) *AuthTokensQuery {
 	return query
 }
 
+// QueryNotifiers queries the notifiers edge of a User.
+func (c *UserClient) QueryNotifiers(u *User) *NotifierQuery {
+	query := (&NotifierClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := u.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(notifier.Table, notifier.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.NotifiersTable, user.NotifiersColumn),
+		)
+		fromV = sqlgraph.Neighbors(u.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *UserClient) Hooks() []Hook {
 	return c.hooks.User
@@ -2165,3 +2406,15 @@ func (c *UserClient) mutate(ctx context.Context, m *UserMutation) (Value, error)
 		return nil, fmt.Errorf("ent: unknown User mutation op: %q", m.Op())
 	}
 }
+
+// hooks and interceptors per client, for fast access.
+type (
+	hooks struct {
+		Attachment, AuthRoles, AuthTokens, Document, Group, GroupInvitationToken, Item,
+		ItemField, Label, Location, MaintenanceEntry, Notifier, User []ent.Hook
+	}
+	inters struct {
+		Attachment, AuthRoles, AuthTokens, Document, Group, GroupInvitationToken, Item,
+		ItemField, Label, Location, MaintenanceEntry, Notifier, User []ent.Interceptor
+	}
+)

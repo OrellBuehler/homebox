@@ -9,20 +9,22 @@ import (
 	"github.com/thechosenlan/homebox/backend/internal/core/services"
 	"github.com/thechosenlan/homebox/backend/internal/data/repo"
 	"github.com/thechosenlan/homebox/backend/internal/sys/validate"
-	"github.com/thechosenlan/homebox/backend/pkgs/server"
+	"github.com/thechosenlan/httpkit/errchain"
+	"github.com/thechosenlan/httpkit/server"
 
 	"github.com/rs/zerolog/log"
 )
 
-// HandleItemGet godocs
-// @Summary  Gets an item by Asset ID
-// @Tags     Assets
-// @Produce  json
-// @Param    id  path     string true "Asset ID"
-// @Success  200
-// @Router   /v1/assets/{id} [GET]
-// @Security Bearer
-func (ctrl *V1Controller) HandleAssetGet() server.HandlerFunc {
+// HandleAssetGet godocs
+//
+//	@Summary  Get Item by Asset ID
+//	@Tags     Items
+//	@Produce  json
+//	@Param    id  path     string true "Asset ID"
+//	@Success  200       {object} repo.PaginationResult[repo.ItemSummary]{}
+//	@Router   /v1/assets/{id} [GET]
+//	@Security Bearer
+func (ctrl *V1Controller) HandleAssetGet() errchain.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		ctx := services.NewContext(r.Context())
 		assetIdParam := chi.URLParam(r, "id")
@@ -37,7 +39,7 @@ func (ctrl *V1Controller) HandleAssetGet() server.HandlerFunc {
 		if pageParam != "" {
 			page, err = strconv.ParseInt(pageParam, 10, 64)
 			if err != nil {
-				return server.Respond(w, http.StatusBadRequest, "Invalid page number")
+				return server.JSON(w, http.StatusBadRequest, "Invalid page number")
 			}
 		}
 
@@ -46,7 +48,7 @@ func (ctrl *V1Controller) HandleAssetGet() server.HandlerFunc {
 		if pageSizeParam != "" {
 			pageSize, err = strconv.ParseInt(pageSizeParam, 10, 64)
 			if err != nil {
-				return server.Respond(w, http.StatusBadRequest, "Invalid page size")
+				return server.JSON(w, http.StatusBadRequest, "Invalid page size")
 			}
 		}
 
@@ -55,6 +57,6 @@ func (ctrl *V1Controller) HandleAssetGet() server.HandlerFunc {
 			log.Err(err).Msg("failed to get item")
 			return validate.NewRequestError(err, http.StatusInternalServerError)
 		}
-		return server.Respond(w, http.StatusOK, items)
+		return server.JSON(w, http.StatusOK, items)
 	}
 }

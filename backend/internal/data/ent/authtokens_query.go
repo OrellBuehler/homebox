@@ -21,11 +21,8 @@ import (
 // AuthTokensQuery is the builder for querying AuthTokens entities.
 type AuthTokensQuery struct {
 	config
-	limit      *int
-	offset     *int
-	unique     *bool
+	ctx        *QueryContext
 	order      []OrderFunc
-	fields     []string
 	inters     []Interceptor
 	predicates []predicate.AuthTokens
 	withUser   *UserQuery
@@ -44,20 +41,20 @@ func (atq *AuthTokensQuery) Where(ps ...predicate.AuthTokens) *AuthTokensQuery {
 
 // Limit the number of records to be returned by this query.
 func (atq *AuthTokensQuery) Limit(limit int) *AuthTokensQuery {
-	atq.limit = &limit
+	atq.ctx.Limit = &limit
 	return atq
 }
 
 // Offset to start from.
 func (atq *AuthTokensQuery) Offset(offset int) *AuthTokensQuery {
-	atq.offset = &offset
+	atq.ctx.Offset = &offset
 	return atq
 }
 
 // Unique configures the query builder to filter duplicate records on query.
 // By default, unique is set to true, and can be disabled using this method.
 func (atq *AuthTokensQuery) Unique(unique bool) *AuthTokensQuery {
-	atq.unique = &unique
+	atq.ctx.Unique = &unique
 	return atq
 }
 
@@ -114,7 +111,7 @@ func (atq *AuthTokensQuery) QueryRoles() *AuthRolesQuery {
 // First returns the first AuthTokens entity from the query.
 // Returns a *NotFoundError when no AuthTokens was found.
 func (atq *AuthTokensQuery) First(ctx context.Context) (*AuthTokens, error) {
-	nodes, err := atq.Limit(1).All(newQueryContext(ctx, TypeAuthTokens, "First"))
+	nodes, err := atq.Limit(1).All(setContextOp(ctx, atq.ctx, "First"))
 	if err != nil {
 		return nil, err
 	}
@@ -137,7 +134,7 @@ func (atq *AuthTokensQuery) FirstX(ctx context.Context) *AuthTokens {
 // Returns a *NotFoundError when no AuthTokens ID was found.
 func (atq *AuthTokensQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
 	var ids []uuid.UUID
-	if ids, err = atq.Limit(1).IDs(newQueryContext(ctx, TypeAuthTokens, "FirstID")); err != nil {
+	if ids, err = atq.Limit(1).IDs(setContextOp(ctx, atq.ctx, "FirstID")); err != nil {
 		return
 	}
 	if len(ids) == 0 {
@@ -160,7 +157,7 @@ func (atq *AuthTokensQuery) FirstIDX(ctx context.Context) uuid.UUID {
 // Returns a *NotSingularError when more than one AuthTokens entity is found.
 // Returns a *NotFoundError when no AuthTokens entities are found.
 func (atq *AuthTokensQuery) Only(ctx context.Context) (*AuthTokens, error) {
-	nodes, err := atq.Limit(2).All(newQueryContext(ctx, TypeAuthTokens, "Only"))
+	nodes, err := atq.Limit(2).All(setContextOp(ctx, atq.ctx, "Only"))
 	if err != nil {
 		return nil, err
 	}
@@ -188,7 +185,7 @@ func (atq *AuthTokensQuery) OnlyX(ctx context.Context) *AuthTokens {
 // Returns a *NotFoundError when no entities are found.
 func (atq *AuthTokensQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
 	var ids []uuid.UUID
-	if ids, err = atq.Limit(2).IDs(newQueryContext(ctx, TypeAuthTokens, "OnlyID")); err != nil {
+	if ids, err = atq.Limit(2).IDs(setContextOp(ctx, atq.ctx, "OnlyID")); err != nil {
 		return
 	}
 	switch len(ids) {
@@ -213,7 +210,7 @@ func (atq *AuthTokensQuery) OnlyIDX(ctx context.Context) uuid.UUID {
 
 // All executes the query and returns a list of AuthTokensSlice.
 func (atq *AuthTokensQuery) All(ctx context.Context) ([]*AuthTokens, error) {
-	ctx = newQueryContext(ctx, TypeAuthTokens, "All")
+	ctx = setContextOp(ctx, atq.ctx, "All")
 	if err := atq.prepareQuery(ctx); err != nil {
 		return nil, err
 	}
@@ -231,10 +228,12 @@ func (atq *AuthTokensQuery) AllX(ctx context.Context) []*AuthTokens {
 }
 
 // IDs executes the query and returns a list of AuthTokens IDs.
-func (atq *AuthTokensQuery) IDs(ctx context.Context) ([]uuid.UUID, error) {
-	var ids []uuid.UUID
-	ctx = newQueryContext(ctx, TypeAuthTokens, "IDs")
-	if err := atq.Select(authtokens.FieldID).Scan(ctx, &ids); err != nil {
+func (atq *AuthTokensQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
+	if atq.ctx.Unique == nil && atq.path != nil {
+		atq.Unique(true)
+	}
+	ctx = setContextOp(ctx, atq.ctx, "IDs")
+	if err = atq.Select(authtokens.FieldID).Scan(ctx, &ids); err != nil {
 		return nil, err
 	}
 	return ids, nil
@@ -251,7 +250,7 @@ func (atq *AuthTokensQuery) IDsX(ctx context.Context) []uuid.UUID {
 
 // Count returns the count of the given query.
 func (atq *AuthTokensQuery) Count(ctx context.Context) (int, error) {
-	ctx = newQueryContext(ctx, TypeAuthTokens, "Count")
+	ctx = setContextOp(ctx, atq.ctx, "Count")
 	if err := atq.prepareQuery(ctx); err != nil {
 		return 0, err
 	}
@@ -269,7 +268,7 @@ func (atq *AuthTokensQuery) CountX(ctx context.Context) int {
 
 // Exist returns true if the query has elements in the graph.
 func (atq *AuthTokensQuery) Exist(ctx context.Context) (bool, error) {
-	ctx = newQueryContext(ctx, TypeAuthTokens, "Exist")
+	ctx = setContextOp(ctx, atq.ctx, "Exist")
 	switch _, err := atq.FirstID(ctx); {
 	case IsNotFound(err):
 		return false, nil
@@ -297,17 +296,15 @@ func (atq *AuthTokensQuery) Clone() *AuthTokensQuery {
 	}
 	return &AuthTokensQuery{
 		config:     atq.config,
-		limit:      atq.limit,
-		offset:     atq.offset,
+		ctx:        atq.ctx.Clone(),
 		order:      append([]OrderFunc{}, atq.order...),
 		inters:     append([]Interceptor{}, atq.inters...),
 		predicates: append([]predicate.AuthTokens{}, atq.predicates...),
 		withUser:   atq.withUser.Clone(),
 		withRoles:  atq.withRoles.Clone(),
 		// clone intermediate query.
-		sql:    atq.sql.Clone(),
-		path:   atq.path,
-		unique: atq.unique,
+		sql:  atq.sql.Clone(),
+		path: atq.path,
 	}
 }
 
@@ -348,9 +345,9 @@ func (atq *AuthTokensQuery) WithRoles(opts ...func(*AuthRolesQuery)) *AuthTokens
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (atq *AuthTokensQuery) GroupBy(field string, fields ...string) *AuthTokensGroupBy {
-	atq.fields = append([]string{field}, fields...)
+	atq.ctx.Fields = append([]string{field}, fields...)
 	grbuild := &AuthTokensGroupBy{build: atq}
-	grbuild.flds = &atq.fields
+	grbuild.flds = &atq.ctx.Fields
 	grbuild.label = authtokens.Label
 	grbuild.scan = grbuild.Scan
 	return grbuild
@@ -369,10 +366,10 @@ func (atq *AuthTokensQuery) GroupBy(field string, fields ...string) *AuthTokensG
 //		Select(authtokens.FieldCreatedAt).
 //		Scan(ctx, &v)
 func (atq *AuthTokensQuery) Select(fields ...string) *AuthTokensSelect {
-	atq.fields = append(atq.fields, fields...)
+	atq.ctx.Fields = append(atq.ctx.Fields, fields...)
 	sbuild := &AuthTokensSelect{AuthTokensQuery: atq}
 	sbuild.label = authtokens.Label
-	sbuild.flds, sbuild.scan = &atq.fields, sbuild.Scan
+	sbuild.flds, sbuild.scan = &atq.ctx.Fields, sbuild.Scan
 	return sbuild
 }
 
@@ -392,7 +389,7 @@ func (atq *AuthTokensQuery) prepareQuery(ctx context.Context) error {
 			}
 		}
 	}
-	for _, f := range atq.fields {
+	for _, f := range atq.ctx.Fields {
 		if !authtokens.ValidColumn(f) {
 			return &ValidationError{Name: f, err: fmt.Errorf("ent: invalid field %q for query", f)}
 		}
@@ -469,6 +466,9 @@ func (atq *AuthTokensQuery) loadUser(ctx context.Context, query *UserQuery, node
 		}
 		nodeids[fk] = append(nodeids[fk], nodes[i])
 	}
+	if len(ids) == 0 {
+		return nil
+	}
 	query.Where(user.IDIn(ids...))
 	neighbors, err := query.All(ctx)
 	if err != nil {
@@ -516,30 +516,22 @@ func (atq *AuthTokensQuery) loadRoles(ctx context.Context, query *AuthRolesQuery
 
 func (atq *AuthTokensQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := atq.querySpec()
-	_spec.Node.Columns = atq.fields
-	if len(atq.fields) > 0 {
-		_spec.Unique = atq.unique != nil && *atq.unique
+	_spec.Node.Columns = atq.ctx.Fields
+	if len(atq.ctx.Fields) > 0 {
+		_spec.Unique = atq.ctx.Unique != nil && *atq.ctx.Unique
 	}
 	return sqlgraph.CountNodes(ctx, atq.driver, _spec)
 }
 
 func (atq *AuthTokensQuery) querySpec() *sqlgraph.QuerySpec {
-	_spec := &sqlgraph.QuerySpec{
-		Node: &sqlgraph.NodeSpec{
-			Table:   authtokens.Table,
-			Columns: authtokens.Columns,
-			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeUUID,
-				Column: authtokens.FieldID,
-			},
-		},
-		From:   atq.sql,
-		Unique: true,
-	}
-	if unique := atq.unique; unique != nil {
+	_spec := sqlgraph.NewQuerySpec(authtokens.Table, authtokens.Columns, sqlgraph.NewFieldSpec(authtokens.FieldID, field.TypeUUID))
+	_spec.From = atq.sql
+	if unique := atq.ctx.Unique; unique != nil {
 		_spec.Unique = *unique
+	} else if atq.path != nil {
+		_spec.Unique = true
 	}
-	if fields := atq.fields; len(fields) > 0 {
+	if fields := atq.ctx.Fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
 		_spec.Node.Columns = append(_spec.Node.Columns, authtokens.FieldID)
 		for i := range fields {
@@ -555,10 +547,10 @@ func (atq *AuthTokensQuery) querySpec() *sqlgraph.QuerySpec {
 			}
 		}
 	}
-	if limit := atq.limit; limit != nil {
+	if limit := atq.ctx.Limit; limit != nil {
 		_spec.Limit = *limit
 	}
-	if offset := atq.offset; offset != nil {
+	if offset := atq.ctx.Offset; offset != nil {
 		_spec.Offset = *offset
 	}
 	if ps := atq.order; len(ps) > 0 {
@@ -574,7 +566,7 @@ func (atq *AuthTokensQuery) querySpec() *sqlgraph.QuerySpec {
 func (atq *AuthTokensQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	builder := sql.Dialect(atq.driver.Dialect())
 	t1 := builder.Table(authtokens.Table)
-	columns := atq.fields
+	columns := atq.ctx.Fields
 	if len(columns) == 0 {
 		columns = authtokens.Columns
 	}
@@ -583,7 +575,7 @@ func (atq *AuthTokensQuery) sqlQuery(ctx context.Context) *sql.Selector {
 		selector = atq.sql
 		selector.Select(selector.Columns(columns...)...)
 	}
-	if atq.unique != nil && *atq.unique {
+	if atq.ctx.Unique != nil && *atq.ctx.Unique {
 		selector.Distinct()
 	}
 	for _, p := range atq.predicates {
@@ -592,12 +584,12 @@ func (atq *AuthTokensQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	for _, p := range atq.order {
 		p(selector)
 	}
-	if offset := atq.offset; offset != nil {
+	if offset := atq.ctx.Offset; offset != nil {
 		// limit is mandatory for offset clause. We start
 		// with default value, and override it below if needed.
 		selector.Offset(*offset).Limit(math.MaxInt32)
 	}
-	if limit := atq.limit; limit != nil {
+	if limit := atq.ctx.Limit; limit != nil {
 		selector.Limit(*limit)
 	}
 	return selector
@@ -617,7 +609,7 @@ func (atgb *AuthTokensGroupBy) Aggregate(fns ...AggregateFunc) *AuthTokensGroupB
 
 // Scan applies the selector query and scans the result into the given value.
 func (atgb *AuthTokensGroupBy) Scan(ctx context.Context, v any) error {
-	ctx = newQueryContext(ctx, TypeAuthTokens, "GroupBy")
+	ctx = setContextOp(ctx, atgb.build.ctx, "GroupBy")
 	if err := atgb.build.prepareQuery(ctx); err != nil {
 		return err
 	}
@@ -665,7 +657,7 @@ func (ats *AuthTokensSelect) Aggregate(fns ...AggregateFunc) *AuthTokensSelect {
 
 // Scan applies the selector query and scans the result into the given value.
 func (ats *AuthTokensSelect) Scan(ctx context.Context, v any) error {
-	ctx = newQueryContext(ctx, TypeAuthTokens, "Select")
+	ctx = setContextOp(ctx, ats.ctx, "Select")
 	if err := ats.prepareQuery(ctx); err != nil {
 		return err
 	}

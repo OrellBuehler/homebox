@@ -5,8 +5,25 @@ import (
 
 	"github.com/thechosenlan/homebox/backend/internal/core/services"
 	"github.com/thechosenlan/homebox/backend/internal/data/repo"
-	"github.com/thechosenlan/homebox/backend/pkgs/server"
+	"github.com/thechosenlan/httpkit/errchain"
+	"github.com/thechosenlan/httpkit/server"
 )
+
+type Results[T any] struct {
+	Items []T `json:"items"`
+}
+
+func WrapResults[T any](items []T) Results[T] {
+	return Results[T]{Items: items}
+}
+
+type Wrapped struct {
+	Item interface{} `json:"item"`
+}
+
+func Wrap(v any) Wrapped {
+	return Wrapped{Item: v}
+}
 
 func WithMaxUploadSize(maxUploadSize int64) func(*V1Controller) {
 	return func(ctrl *V1Controller) {
@@ -44,12 +61,13 @@ type (
 	}
 
 	ApiSummary struct {
-		Healthy  bool     `json:"health"`
-		Versions []string `json:"versions"`
-		Title    string   `json:"title"`
-		Message  string   `json:"message"`
-		Build    Build    `json:"build"`
-		Demo     bool     `json:"demo"`
+		Healthy           bool     `json:"health"`
+		Versions          []string `json:"versions"`
+		Title             string   `json:"title"`
+		Message           string   `json:"message"`
+		Build             Build    `json:"build"`
+		Demo              bool     `json:"demo"`
+		AllowRegistration bool     `json:"allowRegistration"`
 	}
 )
 
@@ -74,19 +92,21 @@ func NewControllerV1(svc *services.AllServices, repos *repo.AllRepos, options ..
 }
 
 // HandleBase godoc
-// @Summary Retrieves the basic information about the API
-// @Tags    Base
-// @Produce json
-// @Success 200 {object} ApiSummary
-// @Router  /v1/status [GET]
-func (ctrl *V1Controller) HandleBase(ready ReadyFunc, build Build) server.HandlerFunc {
+//
+//	@Summary Application Info
+//	@Tags    Base
+//	@Produce json
+//	@Success 200 {object} ApiSummary
+//	@Router  /v1/status [GET]
+func (ctrl *V1Controller) HandleBase(ready ReadyFunc, build Build) errchain.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {
-		return server.Respond(w, http.StatusOK, ApiSummary{
-			Healthy: ready(),
-			Title:   "Go API Template",
-			Message: "Welcome to the Go API Template Application!",
-			Build:   build,
-			Demo:    ctrl.isDemo,
+		return server.JSON(w, http.StatusOK, ApiSummary{
+			Healthy:           ready(),
+			Title:             "Homebox",
+			Message:           "Track, Manage, and Organize your Things",
+			Build:             build,
+			Demo:              ctrl.isDemo,
+			AllowRegistration: ctrl.allowRegistration,
 		})
 	}
 }

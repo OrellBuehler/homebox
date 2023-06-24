@@ -19,8 +19,9 @@ type LocationRepository struct {
 
 type (
 	LocationCreate struct {
-		Name        string `json:"name"`
-		Description string `json:"description"`
+		Name        string    `json:"name"`
+		ParentID    uuid.UUID `json:"parentId" extensions:"x-nullable"`
+		Description string    `json:"description"`
 	}
 
 	LocationUpdate struct {
@@ -61,9 +62,7 @@ func mapLocationSummary(location *ent.Location) LocationSummary {
 	}
 }
 
-var (
-	mapLocationOutErr = mapTErrFunc(mapLocationOut)
-)
+var mapLocationOutErr = mapTErrFunc(mapLocationOut)
 
 func mapLocationOut(location *ent.Location) LocationOut {
 	var parent *LocationSummary
@@ -92,7 +91,7 @@ func mapLocationOut(location *ent.Location) LocationOut {
 }
 
 type LocationQuery struct {
-	FilterChildren bool `json:"filterChildren"`
+	FilterChildren bool `json:"filterChildren" schema:"filterChildren"`
 }
 
 // GetALlWithCount returns all locations with item count field populated
@@ -106,7 +105,7 @@ func (r *LocationRepository) GetAll(ctx context.Context, GID uuid.UUID, filter L
 			updated_at,
 			(
 				SELECT
-					COUNT(*)
+					SUM(items.quantity)
 				FROM
 					items
 				WHERE
@@ -136,9 +135,15 @@ func (r *LocationRepository) GetAll(ctx context.Context, GID uuid.UUID, filter L
 	for rows.Next() {
 		var ct LocationOutCount
 
-		err := rows.Scan(&ct.ID, &ct.Name, &ct.Description, &ct.CreatedAt, &ct.UpdatedAt, &ct.ItemCount)
+		var maybeCount *int
+
+		err := rows.Scan(&ct.ID, &ct.Name, &ct.Description, &ct.CreatedAt, &ct.UpdatedAt, &maybeCount)
 		if err != nil {
 			return nil, err
+		}
+
+		if maybeCount != nil {
+			ct.ItemCount = *maybeCount
 		}
 
 		list = append(list, ct)
@@ -152,7 +157,9 @@ func (r *LocationRepository) getOne(ctx context.Context, where ...predicate.Loca
 		Where(where...).
 		WithGroup().
 		WithItems(func(iq *ent.ItemQuery) {
-			iq.Where(item.Archived(false)).WithLabel()
+			iq.Where(item.Archived(false)).
+				Order(ent.Asc(item.FieldName)).
+				WithLabel()
 		}).
 		WithParent().
 		WithChildren().
@@ -168,12 +175,16 @@ func (r *LocationRepository) GetOneByGroup(ctx context.Context, GID, ID uuid.UUI
 }
 
 func (r *LocationRepository) Create(ctx context.Context, GID uuid.UUID, data LocationCreate) (LocationOut, error) {
-	location, err := r.db.Location.Create().
+	q := r.db.Location.Create().
 		SetName(data.Name).
 		SetDescription(data.Description).
-		SetGroupID(GID).
-		Save(ctx)
+		SetGroupID(GID)
 
+	if data.ParentID != uuid.Nil {
+		q.SetParentID(data.ParentID)
+	}
+
+	location, err := q.Save(ctx)
 	if err != nil {
 		return LocationOut{}, err
 	}
@@ -206,7 +217,7 @@ func (r *LocationRepository) Update(ctx context.Context, data LocationUpdate) (L
 	return r.update(ctx, data, location.ID(data.ID))
 }
 
-func (r *LocationRepository) UpdateOneByGroup(ctx context.Context, GID, ID uuid.UUID, data LocationUpdate) (LocationOut, error) {
+func (r *LocationRepository) UpdateByGroup(ctx context.Context, GID, ID uuid.UUID, data LocationUpdate) (LocationOut, error) {
 	return r.update(ctx, data, location.ID(ID), location.HasGroupWith(group.ID(GID)))
 }
 
@@ -217,4 +228,209 @@ func (r *LocationRepository) Delete(ctx context.Context, ID uuid.UUID) error {
 func (r *LocationRepository) DeleteByGroup(ctx context.Context, GID, ID uuid.UUID) error {
 	_, err := r.db.Location.Delete().Where(location.ID(ID), location.HasGroupWith(group.ID(GID))).Exec(ctx)
 	return err
+}
+
+type TreeItem struct {
+	ID       uuid.UUID   `json:"id"`
+	Name     string      `json:"name"`
+	Type     string      `json:"type"`
+	Children []*TreeItem `json:"children"`
+}
+
+type FlatTreeItem struct {
+	ID       uuid.UUID
+	Name     string
+	Type     string
+	ParentID uuid.UUID
+	Level    int
+}
+
+type TreeQuery struct {
+	WithItems bool `json:"withItems" schema:"withItems"`
+}
+
+type LocationPath struct {
+	ID   uuid.UUID `json:"id"`
+	Name string    `json:"name"`
+}
+
+func (lr *LocationRepository) PathForLoc(ctx context.Context, GID, locID uuid.UUID) ([]LocationPath, error) {
+	query := `WITH RECURSIVE location_path AS (
+		SELECT id, name, location_children
+		FROM locations
+		WHERE id = ? -- Replace ? with the ID of the item's location
+		AND group_locations = ? -- Replace ? with the ID of the group
+
+		UNION ALL
+
+		SELECT loc.id, loc.name, loc.location_children
+		FROM locations loc
+		JOIN location_path lp ON loc.id = lp.location_children
+	  )
+
+	  SELECT id, name
+	  FROM location_path`
+
+	rows, err := lr.db.Sql().QueryContext(ctx, query, locID, GID)
+	if err != nil {
+		return nil, err
+	}
+
+	var locations []LocationPath
+
+	for rows.Next() {
+		var location LocationPath
+		if err := rows.Scan(&location.ID, &location.Name); err != nil {
+			return nil, err
+		}
+		locations = append(locations, location)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	// Reverse the order of the locations so that the root is last
+	for i := len(locations)/2 - 1; i >= 0; i-- {
+		opp := len(locations) - 1 - i
+		locations[i], locations[opp] = locations[opp], locations[i]
+	}
+
+	return locations, nil
+}
+
+func (lr *LocationRepository) Tree(ctx context.Context, GID uuid.UUID, tq TreeQuery) ([]TreeItem, error) {
+	query := `
+		WITH recursive location_tree(id, NAME, parent_id, level, node_type) AS
+		(
+			SELECT  id,
+					NAME,
+					location_children AS parent_id,
+					0 AS level,
+					'location' AS node_type
+			FROM    locations
+			WHERE   location_children IS NULL
+			AND     group_locations = ?
+
+			UNION ALL
+			SELECT  c.id,
+					c.NAME,
+					c.location_children AS parent_id,
+					level + 1,
+					'location' AS node_type
+			FROM   locations c
+			JOIN   location_tree p
+			ON     c.location_children = p.id
+			WHERE  level < 10 -- prevent infinite loop & excessive recursion
+		){{ WITH_ITEMS }}
+
+		SELECT   id,
+				 NAME,
+				 level,
+				 parent_id,
+				 node_type
+		FROM    (
+					SELECT  *
+					FROM    location_tree
+
+
+					{{ WITH_ITEMS_FROM }}
+
+
+				) tree
+		ORDER BY node_type DESC, -- sort locations before items
+				 level,
+				 lower(NAME)`
+
+	if tq.WithItems {
+		itemQuery := `, item_tree(id, NAME, parent_id, level, node_type) AS
+		(
+			SELECT  id,
+					NAME,
+					location_items as parent_id,
+					0 AS level,
+					'item' AS node_type
+			FROM    items
+			WHERE   item_children IS NULL
+			AND     location_items IN (SELECT id FROM location_tree)
+
+			UNION ALL
+
+			SELECT  c.id,
+					c.NAME,
+					c.item_children AS parent_id,
+					level + 1,
+					'item' AS node_type
+			FROM    items c
+			JOIN    item_tree p
+			ON      c.item_children = p.id
+			WHERE   c.item_children IS NOT NULL
+			AND     level < 10 -- prevent infinite loop & excessive recursion
+		)`
+
+		// Conditional table joined to main query
+		itemsFrom := `
+		UNION ALL
+		SELECT  *
+		FROM    item_tree`
+
+		query = strings.ReplaceAll(query, "{{ WITH_ITEMS }}", itemQuery)
+		query = strings.ReplaceAll(query, "{{ WITH_ITEMS_FROM }}", itemsFrom)
+	} else {
+		query = strings.ReplaceAll(query, "{{ WITH_ITEMS }}", "")
+		query = strings.ReplaceAll(query, "{{ WITH_ITEMS_FROM }}", "")
+	}
+
+	rows, err := lr.db.Sql().QueryContext(ctx, query, GID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var locations []FlatTreeItem
+	for rows.Next() {
+		var location FlatTreeItem
+		if err := rows.Scan(&location.ID, &location.Name, &location.Level, &location.ParentID, &location.Type); err != nil {
+			return nil, err
+		}
+		locations = append(locations, location)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return ConvertLocationsToTree(locations), nil
+}
+
+func ConvertLocationsToTree(locations []FlatTreeItem) []TreeItem {
+	locationMap := make(map[uuid.UUID]*TreeItem, len(locations))
+
+	var rootIds []uuid.UUID
+
+	for _, location := range locations {
+		loc := &TreeItem{
+			ID:       location.ID,
+			Name:     location.Name,
+			Type:     location.Type,
+			Children: []*TreeItem{},
+		}
+
+		locationMap[location.ID] = loc
+		if location.ParentID != uuid.Nil {
+			parent, ok := locationMap[location.ParentID]
+			if ok {
+				parent.Children = append(parent.Children, loc)
+			}
+		} else {
+			rootIds = append(rootIds, location.ID)
+		}
+	}
+
+	roots := make([]TreeItem, 0, len(rootIds))
+	for _, id := range rootIds {
+		roots = append(roots, *locationMap[id])
+	}
+
+	return roots
 }

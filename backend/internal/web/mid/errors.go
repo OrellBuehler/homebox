@@ -3,37 +3,58 @@ package mid
 import (
 	"net/http"
 
+<<<<<<< HEAD
+=======
+	"github.com/go-chi/chi/v5/middleware"
+	"github.com/hay-kot/homebox/backend/internal/data/ent"
+	"github.com/hay-kot/homebox/backend/internal/sys/validate"
+<<<<<<< HEAD
+	"github.com/hay-kot/safeserve/errchain"
+	"github.com/hay-kot/safeserve/server"
+>>>>>>> db80f8a (chore: refactor api endpoints (#339))
+=======
+	"github.com/hay-kot/httpkit/errchain"
+	"github.com/hay-kot/httpkit/server"
+>>>>>>> 64b3ac3 (change safeserve -> httpkit (#405))
 	"github.com/rs/zerolog"
 	"github.com/thechosenlan/homebox/backend/internal/data/ent"
 	"github.com/thechosenlan/homebox/backend/internal/sys/validate"
 	"github.com/thechosenlan/homebox/backend/pkgs/server"
 )
 
-func Errors(log zerolog.Logger) server.Middleware {
-	return func(h server.Handler) server.Handler {
-		return server.HandlerFunc(func(w http.ResponseWriter, r *http.Request) error {
-			err := h.ServeHTTP(w, r)
+type ErrorResponse struct {
+	Error  string            `json:"error"`
+	Fields map[string]string `json:"fields,omitempty"`
+}
 
+func Errors(svr *server.Server, log zerolog.Logger) errchain.ErrorHandler {
+	return func(h errchain.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			err := h.ServeHTTP(w, r)
 			if err != nil {
-				var resp server.ErrorResponse
+				var resp ErrorResponse
 				var code int
 
+				traceID := r.Context().Value(middleware.RequestIDKey).(string)
 				log.Err(err).
-					Str("trace_id", server.GetTraceID(r.Context())).
+					Stack().
+					Str("req_id", traceID).
 					Msg("ERROR occurred")
 
 				switch {
 				case validate.IsUnauthorizedError(err):
 					code = http.StatusUnauthorized
-					resp = server.ErrorResponse{
+					resp = ErrorResponse{
 						Error: "unauthorized",
 					}
 				case validate.IsInvalidRouteKeyError(err):
 					code = http.StatusBadRequest
-					resp = server.ErrorResponse{
+					resp = ErrorResponse{
 						Error: err.Error(),
 					}
 				case validate.IsFieldError(err):
+					code = http.StatusUnprocessableEntity
+
 					fieldErrors := err.(validate.FieldErrors)
 					resp.Error = "Validation Error"
 					resp.Fields = map[string]string{}
@@ -44,27 +65,32 @@ func Errors(log zerolog.Logger) server.Middleware {
 				case validate.IsRequestError(err):
 					requestError := err.(*validate.RequestError)
 					resp.Error = requestError.Error()
-					code = requestError.Status
+
+					if requestError.Status == 0 {
+						code = http.StatusBadRequest
+					} else {
+						code = requestError.Status
+					}
 				case ent.IsNotFound(err):
 					resp.Error = "Not Found"
 					code = http.StatusNotFound
 				default:
 					resp.Error = "Unknown Error"
 					code = http.StatusInternalServerError
-
 				}
 
-				if err := server.Respond(w, code, resp); err != nil {
-					return err
+				if err := server.JSON(w, code, resp); err != nil {
+					log.Err(err).Msg("failed to write response")
 				}
 
 				// If Showdown error, return error
 				if server.IsShutdownError(err) {
-					return err
+					err := svr.Shutdown(err.Error())
+					if err != nil {
+						log.Err(err).Msg("failed to shutdown server")
+					}
 				}
 			}
-
-			return nil
 		})
 	}
 }

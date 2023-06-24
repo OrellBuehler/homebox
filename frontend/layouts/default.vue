@@ -6,7 +6,6 @@
     up the tree
    -->
     <ModalConfirm />
-    <AppImportDialog v-model="modals.import" />
     <ItemCreateModal v-model="modals.item" />
     <LabelCreateModal v-model="modals.label" />
     <LocationCreateModal v-model="modals.location" />
@@ -17,16 +16,16 @@
         <AppHeaderDecor class="-mt-10 hidden lg:block" />
         <!-- Button -->
         <div class="navbar z-[99] lg:hidden top-0 fixed bg-primary shadow-md drawer-button">
+          <label for="my-drawer-2" class="btn btn-square btn-ghost text-base-100 drawer-button lg:hidden">
+            <Icon name="mdi-menu" class="h-6 w-6" />
+          </label>
           <NuxtLink to="/home">
-            <h2 class="mt-1 ml-1 text-3xl font-bold tracking-tight text-base-100 flex">
+            <h2 class="text-3xl font-bold tracking-tight text-base-100 flex">
               HomeB
               <AppLogo class="w-8 -mb-3" />
               x
             </h2>
           </NuxtLink>
-          <label for="my-drawer-2" class="btn btn-square btn-ghost ml-auto text-base-100 drawer-button lg:hidden">
-            <Icon name="mdi-menu" class="h-6 w-6" />
-          </label>
         </div>
 
         <slot></slot>
@@ -78,10 +77,6 @@
                     <Icon :name="n.icon" class="h-6 w-6 mr-4" />
                     {{ n.name }}
                   </NuxtLink>
-                  <button v-else class="rounded-btn" @click="n.action">
-                    <Icon :name="n.icon" class="h-6 w-6 mr-4" />
-                    {{ n.name }}
-                  </button>
                 </li>
               </ul>
             </div>
@@ -96,11 +91,10 @@
 </template>
 
 <script lang="ts" setup>
-  import { useAuthStore } from "~~/stores/auth";
   import { useLabelStore } from "~~/stores/labels";
   import { useLocationStore } from "~~/stores/locations";
 
-  const username = computed(() => authStore.self?.name || "User");
+  const username = computed(() => authCtx.user?.name || "User");
 
   // Preload currency format
   useFormatCurrency();
@@ -151,6 +145,20 @@
       to: "/home",
     },
     {
+      icon: "mdi-file-tree",
+      id: 4,
+      active: computed(() => route.path === "/locations"),
+      name: "Locations",
+      to: "/locations",
+    },
+    {
+      icon: "mdi-magnify",
+      id: 3,
+      active: computed(() => route.path === "/items"),
+      name: "Search",
+      to: "/items",
+    },
+    {
       icon: "mdi-account",
       id: 1,
       active: computed(() => route.path === "/profile"),
@@ -158,35 +166,26 @@
       to: "/profile",
     },
     {
-      icon: "mdi-document",
-      id: 3,
-      active: computed(() => route.path === "/items"),
-      name: "Items",
-      to: "/items",
+      icon: "mdi-cog",
+      id: 6,
+      active: computed(() => route.path === "/tools"),
+      name: "Tools",
+      to: "/tools",
     },
-    {
-      icon: "mdi-database",
-      id: 2,
-      name: "Import",
-      action: () => {
-        modals.import = true;
-      },
-    },
-    // {
-    //   icon: "mdi-database-export",
-    //   id: 5,
-    //   name: "Export",
-    //   action: () => {
-    //     console.log("Export");
-    //   },
-    // },
   ];
+
+  function isMutation(method: string | undefined) {
+    return method === "POST" || method === "PUT" || method === "DELETE";
+  }
+  function isSuccess(status: number) {
+    return status >= 200 && status < 300;
+  }
 
   const labelStore = useLabelStore();
   const reLabel = /\/api\/v1\/labels\/.*/gm;
   const rmLabelStoreObserver = defineObserver("labelStore", {
-    handler: r => {
-      if (r.status === 201 || r.url.match(reLabel)) {
+    handler: (resp, req) => {
+      if (isMutation(req?.method) && isSuccess(resp.status) && resp.url.match(reLabel)) {
         labelStore.refresh();
       }
       console.debug("labelStore handler called by observer");
@@ -196,18 +195,19 @@
   const locationStore = useLocationStore();
   const reLocation = /\/api\/v1\/locations\/.*/gm;
   const rmLocationStoreObserver = defineObserver("locationStore", {
-    handler: r => {
-      if (r.status === 201 || r.url.match(reLocation)) {
+    handler: (resp, req) => {
+      if (isMutation(req?.method) && isSuccess(resp.status) && resp.url.match(reLocation)) {
         locationStore.refreshChildren();
         locationStore.refreshParents();
       }
+
       console.debug("locationStore handler called by observer");
     },
   });
 
   const eventBus = useEventBus();
   eventBus.on(
-    EventTypes.ClearStores,
+    EventTypes.InvalidStores,
     () => {
       labelStore.refresh();
       locationStore.refreshChildren();
@@ -219,18 +219,13 @@
   onUnmounted(() => {
     rmLabelStoreObserver();
     rmLocationStoreObserver();
-    eventBus.off(EventTypes.ClearStores, "stores");
+    eventBus.off(EventTypes.InvalidStores, "stores");
   });
 
-  const authStore = useAuthStore();
+  const authCtx = useAuthContext();
   const api = useUserApi();
 
   async function logout() {
-    const { error } = await authStore.logout(api);
-    if (error) {
-      return;
-    }
-
-    navigateTo("/");
+    await authCtx.logout(api);
   }
 </script>

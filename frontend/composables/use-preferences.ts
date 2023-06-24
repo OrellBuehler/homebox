@@ -1,10 +1,13 @@
 import { Ref } from "vue";
 import { DaisyTheme } from "~~/lib/data/themes";
 
+export type ViewType = "table" | "card" | "tree";
+
 export type LocationViewPreferences = {
   showDetails: boolean;
   showEmpty: boolean;
-  editorSimpleView: boolean;
+  editorAdvancedView: boolean;
+  itemDisplayView: ViewType;
   theme: DaisyTheme;
 };
 
@@ -18,8 +21,9 @@ export function useViewPreferences(): Ref<LocationViewPreferences> {
     {
       showDetails: true,
       showEmpty: true,
-      editorSimpleView: true,
-      theme: "garden",
+      editorAdvancedView: false,
+      itemDisplayView: "card",
+      theme: "homebox",
     },
     { mergeDefaults: true }
   );

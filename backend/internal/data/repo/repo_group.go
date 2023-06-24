@@ -16,7 +16,36 @@ import (
 )
 
 type GroupRepository struct {
-	db *ent.Client
+	db               *ent.Client
+	groupMapper      MapFunc[*ent.Group, Group]
+	invitationMapper MapFunc[*ent.GroupInvitationToken, GroupInvitation]
+}
+
+func NewGroupRepository(db *ent.Client) *GroupRepository {
+	gmap := func(g *ent.Group) Group {
+		return Group{
+			ID:        g.ID,
+			Name:      g.Name,
+			CreatedAt: g.CreatedAt,
+			UpdatedAt: g.UpdatedAt,
+			Currency:  strings.ToUpper(g.Currency.String()),
+		}
+	}
+
+	imap := func(i *ent.GroupInvitationToken) GroupInvitation {
+		return GroupInvitation{
+			ID:        i.ID,
+			ExpiresAt: i.ExpiresAt,
+			Uses:      i.Uses,
+			Group:     gmap(i.Edges.Group),
+		}
+	}
+
+	return &GroupRepository{
+		db:               db,
+		groupMapper:      gmap,
+		invitationMapper: imap,
+	}
 }
 
 type (
@@ -76,31 +105,8 @@ type (
 	}
 )
 
-var (
-	mapToGroupErr = mapTErrFunc(mapToGroup)
-)
-
-func mapToGroup(g *ent.Group) Group {
-	return Group{
-		ID:        g.ID,
-		Name:      g.Name,
-		CreatedAt: g.CreatedAt,
-		UpdatedAt: g.UpdatedAt,
-		Currency:  strings.ToUpper(g.Currency.String()),
-	}
-}
-
-var (
-	mapToGroupInvitationErr = mapTErrFunc(mapToGroupInvitation)
-)
-
-func mapToGroupInvitation(g *ent.GroupInvitationToken) GroupInvitation {
-	return GroupInvitation{
-		ID:        g.ID,
-		ExpiresAt: g.ExpiresAt,
-		Uses:      g.Uses,
-		Group:     mapToGroup(g.Edges.Group),
-	}
+func (r *GroupRepository) GetAllGroups(ctx context.Context) ([]Group, error) {
+	return r.groupMapper.MapEachErr(r.db.Group.Query().All(ctx))
 }
 
 func (r *GroupRepository) StatsLocationsByPurchasePrice(ctx context.Context, GID uuid.UUID) ([]TotalsByOrganizer, error) {
@@ -118,7 +124,6 @@ func (r *GroupRepository) StatsLocationsByPurchasePrice(ctx context.Context, GID
 			return sql.As(sql.Sum(t.C(item.FieldPurchasePrice)), "total")
 		}).
 		Scan(ctx, &v)
-
 	if err != nil {
 		return nil, err
 	}
@@ -145,7 +150,6 @@ func (r *GroupRepository) StatsLabelsByPurchasePrice(ctx context.Context, GID uu
 			return sql.As(sql.Sum(itemTable.C(item.FieldPurchasePrice)), "total")
 		}).
 		Scan(ctx, &v)
-
 	if err != nil {
 		return nil, err
 	}
@@ -240,16 +244,22 @@ func (r *GroupRepository) StatsGroup(ctx context.Context, GID uuid.UUID) (GroupS
 	var stats GroupStatistics
 	row := r.db.Sql().QueryRowContext(ctx, q, GID, GID, GID, GID, GID, GID)
 
-	err := row.Scan(&stats.TotalUsers, &stats.TotalItems, &stats.TotalLocations, &stats.TotalLabels, &stats.TotalItemPrice, &stats.TotalWithWarranty)
+	var maybeTotalItemPrice *float64
+	var maybeTotalWithWarranty *int
+
+	err := row.Scan(&stats.TotalUsers, &stats.TotalItems, &stats.TotalLocations, &stats.TotalLabels, &maybeTotalItemPrice, &maybeTotalWithWarranty)
 	if err != nil {
 		return GroupStatistics{}, err
 	}
+
+	stats.TotalItemPrice = orDefault(maybeTotalItemPrice, 0)
+	stats.TotalWithWarranty = orDefault(maybeTotalWithWarranty, 0)
 
 	return stats, nil
 }
 
 func (r *GroupRepository) GroupCreate(ctx context.Context, name string) (Group, error) {
-	return mapToGroupErr(r.db.Group.Create().
+	return r.groupMapper.MapErr(r.db.Group.Create().
 		SetName(name).
 		Save(ctx))
 }
@@ -262,15 +272,15 @@ func (r *GroupRepository) GroupUpdate(ctx context.Context, ID uuid.UUID, data Gr
 		SetCurrency(currency).
 		Save(ctx)
 
-	return mapToGroupErr(entity, err)
+	return r.groupMapper.MapErr(entity, err)
 }
 
 func (r *GroupRepository) GroupByID(ctx context.Context, id uuid.UUID) (Group, error) {
-	return mapToGroupErr(r.db.Group.Get(ctx, id))
+	return r.groupMapper.MapErr(r.db.Group.Get(ctx, id))
 }
 
 func (r *GroupRepository) InvitationGet(ctx context.Context, token []byte) (GroupInvitation, error) {
-	return mapToGroupInvitationErr(r.db.GroupInvitationToken.Query().
+	return r.invitationMapper.MapErr(r.db.GroupInvitationToken.Query().
 		Where(groupinvitationtoken.Token(token)).
 		WithGroup().
 		Only(ctx))
@@ -283,7 +293,6 @@ func (r *GroupRepository) InvitationCreate(ctx context.Context, groupID uuid.UUI
 		SetExpiresAt(invite.ExpiresAt).
 		SetUses(invite.Uses).
 		Save(ctx)
-
 	if err != nil {
 		return GroupInvitation{}, err
 	}

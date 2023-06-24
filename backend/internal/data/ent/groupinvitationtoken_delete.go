@@ -40,15 +40,7 @@ func (gitd *GroupInvitationTokenDelete) ExecX(ctx context.Context) int {
 }
 
 func (gitd *GroupInvitationTokenDelete) sqlExec(ctx context.Context) (int, error) {
-	_spec := &sqlgraph.DeleteSpec{
-		Node: &sqlgraph.NodeSpec{
-			Table: groupinvitationtoken.Table,
-			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeUUID,
-				Column: groupinvitationtoken.FieldID,
-			},
-		},
-	}
+	_spec := sqlgraph.NewDeleteSpec(groupinvitationtoken.Table, sqlgraph.NewFieldSpec(groupinvitationtoken.FieldID, field.TypeUUID))
 	if ps := gitd.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -69,6 +61,12 @@ type GroupInvitationTokenDeleteOne struct {
 	gitd *GroupInvitationTokenDelete
 }
 
+// Where appends a list predicates to the GroupInvitationTokenDelete builder.
+func (gitdo *GroupInvitationTokenDeleteOne) Where(ps ...predicate.GroupInvitationToken) *GroupInvitationTokenDeleteOne {
+	gitdo.gitd.mutation.Where(ps...)
+	return gitdo
+}
+
 // Exec executes the deletion query.
 func (gitdo *GroupInvitationTokenDeleteOne) Exec(ctx context.Context) error {
 	n, err := gitdo.gitd.Exec(ctx)
@@ -84,5 +82,7 @@ func (gitdo *GroupInvitationTokenDeleteOne) Exec(ctx context.Context) error {
 
 // ExecX is like Exec, but panics if an error occurs.
 func (gitdo *GroupInvitationTokenDeleteOne) ExecX(ctx context.Context) {
-	gitdo.gitd.ExecX(ctx)
+	if err := gitdo.Exec(ctx); err != nil {
+		panic(err)
+	}
 }

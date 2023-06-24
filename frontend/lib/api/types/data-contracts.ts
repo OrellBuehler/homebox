@@ -10,6 +10,11 @@
  * ---------------------------------------------------------------
  */
 
+export interface MidErrorResponse {
+  error: string;
+  fields: Record<string, string>;
+}
+
 export interface DocumentOut {
   id: string;
   path: string;
@@ -17,11 +22,11 @@ export interface DocumentOut {
 }
 
 export interface Group {
-  createdAt: string;
+  createdAt: Date | string;
   currency: string;
   id: string;
   name: string;
-  updatedAt: string;
+  updatedAt: Date | string;
 }
 
 export interface GroupStatistics {
@@ -39,11 +44,11 @@ export interface GroupUpdate {
 }
 
 export interface ItemAttachment {
-  createdAt: string;
+  createdAt: Date | string;
   document: DocumentOut;
   id: string;
   type: string;
-  updatedAt: string;
+  updatedAt: Date | string;
 }
 
 export interface ItemAttachmentUpdate {
@@ -52,12 +57,17 @@ export interface ItemAttachmentUpdate {
 }
 
 export interface ItemCreate {
+  /** @maxLength 1000 */
   description: string;
   labelIds: string[];
   /** Edges */
   locationId: string;
+  /**
+   * @minLength 1
+   * @maxLength 255
+   */
   name: string;
-  parentId: string | null;
+  parentId?: string | null;
 }
 
 export interface ItemField {
@@ -66,7 +76,6 @@ export interface ItemField {
   name: string;
   numberValue: number;
   textValue: string;
-  timeValue: string;
   type: string;
 }
 
@@ -76,7 +85,7 @@ export interface ItemOut {
   assetId: string;
   attachments: ItemAttachment[];
   children: ItemSummary[];
-  createdAt: string;
+  createdAt: Date | string;
   description: string;
   fields: ItemField[];
   id: string;
@@ -85,45 +94,50 @@ export interface ItemOut {
   /** Warranty */
   lifetimeWarranty: boolean;
   /** Edges */
-  location: LocationSummary | null;
+  location?: LocationSummary | null;
   manufacturer: string;
   modelNumber: string;
   name: string;
   /** Extras */
   notes: string;
-  parent: ItemSummary | null;
+  parent?: ItemSummary | null;
   purchaseFrom: string;
   /** @example "0" */
   purchasePrice: string;
   /** Purchase */
-  purchaseTime: string;
+  purchaseTime: Date | string;
   quantity: number;
   serialNumber: string;
   soldNotes: string;
   /** @example "0" */
   soldPrice: string;
   /** Sold */
-  soldTime: string;
+  soldTime: Date | string;
   soldTo: string;
-  updatedAt: string;
+  updatedAt: Date | string;
   warrantyDetails: string;
-  warrantyExpires: string;
+  warrantyExpires: Date | string;
+}
+
+export interface ItemPatch {
+  id: string;
+  quantity?: number | null;
 }
 
 export interface ItemSummary {
   archived: boolean;
-  createdAt: string;
+  createdAt: Date | string;
   description: string;
   id: string;
   insured: boolean;
   labels: LabelSummary[];
   /** Edges */
-  location: LocationSummary | null;
+  location?: LocationSummary | null;
   name: string;
   /** @example "0" */
   purchasePrice: string;
   quantity: number;
-  updatedAt: string;
+  updatedAt: Date | string;
 }
 
 export interface ItemUpdate {
@@ -143,12 +157,12 @@ export interface ItemUpdate {
   name: string;
   /** Extras */
   notes: string;
-  parentId: string | null;
+  parentId?: string | null;
   purchaseFrom: string;
   /** @example "0" */
   purchasePrice: string;
   /** Purchase */
-  purchaseTime: string;
+  purchaseTime: Date | string;
   quantity: number;
   /** Identifications */
   serialNumber: string;
@@ -156,98 +170,114 @@ export interface ItemUpdate {
   /** @example "0" */
   soldPrice: string;
   /** Sold */
-  soldTime: string;
+  soldTime: Date | string;
   soldTo: string;
   warrantyDetails: string;
-  warrantyExpires: string;
+  /** Sold */
+  warrantyExpires: Date | string;
 }
 
 export interface LabelCreate {
   color: string;
+  /** @maxLength 255 */
   description: string;
+  /**
+   * @minLength 1
+   * @maxLength 255
+   */
   name: string;
 }
 
 export interface LabelOut {
-  createdAt: string;
+  createdAt: Date | string;
   description: string;
   id: string;
   items: ItemSummary[];
   name: string;
-  updatedAt: string;
+  updatedAt: Date | string;
 }
 
 export interface LabelSummary {
-  createdAt: string;
+  createdAt: Date | string;
   description: string;
   id: string;
   name: string;
-  updatedAt: string;
+  updatedAt: Date | string;
 }
 
 export interface LocationCreate {
   description: string;
   name: string;
+  parentId?: string | null;
 }
 
 export interface LocationOut {
   children: LocationSummary[];
-  createdAt: string;
+  createdAt: Date | string;
   description: string;
   id: string;
   items: ItemSummary[];
   name: string;
   parent: LocationSummary;
-  updatedAt: string;
+  updatedAt: Date | string;
 }
 
 export interface LocationOutCount {
-  createdAt: string;
+  createdAt: Date | string;
   description: string;
   id: string;
   itemCount: number;
   name: string;
-  updatedAt: string;
+  updatedAt: Date | string;
 }
 
 export interface LocationSummary {
-  createdAt: string;
+  createdAt: Date | string;
   description: string;
   id: string;
   name: string;
-  updatedAt: string;
+  updatedAt: Date | string;
 }
 
 export interface LocationUpdate {
   description: string;
   id: string;
   name: string;
-  parentId: string | null;
+  parentId?: string | null;
 }
 
 export interface MaintenanceEntry {
+  /** Sold */
+  completedDate: Date | string;
   /** @example "0" */
   cost: string;
-  date: string;
   description: string;
   id: string;
   name: string;
+  /** Sold */
+  scheduledDate: Date | string;
 }
 
 export interface MaintenanceEntryCreate {
+  /** Sold */
+  completedDate: Date | string;
   /** @example "0" */
   cost: string;
-  date: string;
   description: string;
   name: string;
+  /** Sold */
+  scheduledDate: Date | string;
 }
 
 export interface MaintenanceEntryUpdate {
+  /** Sold */
+  completedDate: Date | string;
   /** @example "0" */
   cost: string;
-  date: string;
   description: string;
   name: string;
+  /** Sold */
+  scheduledDate: Date | string;
 }
 
 export interface MaintenanceLog {
@@ -257,10 +287,54 @@ export interface MaintenanceLog {
   itemId: string;
 }
 
+export interface NotifierCreate {
+  isActive: boolean;
+  /**
+   * @minLength 1
+   * @maxLength 255
+   */
+  name: string;
+  url: string;
+}
+
+export interface NotifierOut {
+  createdAt: Date | string;
+  groupId: string;
+  id: string;
+  isActive: boolean;
+  name: string;
+  updatedAt: Date | string;
+  userId: string;
+}
+
+export interface NotifierUpdate {
+  isActive: boolean;
+  /**
+   * @minLength 1
+   * @maxLength 255
+   */
+  name: string;
+  url?: string | null;
+}
+
+export interface PaginationResultItemSummary {
+  items: ItemSummary[];
+  page: number;
+  pageSize: number;
+  total: number;
+}
+
 export interface TotalsByOrganizer {
   id: string;
   name: string;
   total: number;
+}
+
+export interface TreeItem {
+  children: TreeItem[];
+  id: string;
+  name: string;
+  type: string;
 }
 
 export interface UserOut {
@@ -287,25 +361,9 @@ export interface ValueOverTime {
 }
 
 export interface ValueOverTimeEntry {
-  date: string;
+  date: Date | string;
   name: string;
   value: number;
-}
-
-export interface ServerErrorResponse {
-  error: string;
-  fields: Record<string, string>;
-}
-
-export interface ServerResult {
-  details: any;
-  error: boolean;
-  item: any;
-  message: string;
-}
-
-export interface ServerResults {
-  items: any;
 }
 
 export interface UserRegistration {
@@ -315,7 +373,12 @@ export interface UserRegistration {
   token: string;
 }
 
+export interface ActionAmountResult {
+  completed: number;
+}
+
 export interface ApiSummary {
+  allowRegistration: boolean;
   build: Build;
   demo: boolean;
   health: boolean;
@@ -335,18 +398,18 @@ export interface ChangePassword {
   new: string;
 }
 
-export interface EnsureAssetIDResult {
-  completed: number;
-}
-
 export interface GroupInvitation {
-  expiresAt: Date;
+  expiresAt: Date | string;
   token: string;
   uses: number;
 }
 
 export interface GroupInvitationCreate {
-  expiresAt: Date;
+  expiresAt: Date | string;
+  /**
+   * @min 1
+   * @max 100
+   */
   uses: number;
 }
 
@@ -354,8 +417,18 @@ export interface ItemAttachmentToken {
   token: string;
 }
 
+export interface LoginForm {
+  password: string;
+  stayLoggedIn: boolean;
+  username: string;
+}
+
 export interface TokenResponse {
   attachmentToken: string;
-  expiresAt: Date;
+  expiresAt: Date | string;
   token: string;
+}
+
+export interface Wrapped {
+  item: any;
 }

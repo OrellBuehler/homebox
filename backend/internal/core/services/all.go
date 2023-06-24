@@ -1,11 +1,14 @@
 package services
 
-import "github.com/thechosenlan/homebox/backend/internal/data/repo"
+import (
+	"github.com/thechosenlan/homebox/backend/internal/data/repo"
+)
 
 type AllServices struct {
-	User  *UserService
-	Group *GroupService
-	Items *ItemService
+	User              *UserService
+	Group             *GroupService
+	Items             *ItemService
+	BackgroundService *BackgroundService
 }
 
 type OptionsFunc func(*options)
@@ -40,5 +43,6 @@ func New(repos *repo.AllRepos, opts ...OptionsFunc) *AllServices {
 			repo:                 repos,
 			autoIncrementAssetID: options.autoIncrementAssetID,
 		},
+		BackgroundService: &BackgroundService{repos},
 	}
 }

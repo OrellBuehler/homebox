@@ -17,6 +17,7 @@ import (
 	"github.com/thechosenlan/homebox/backend/internal/data/ent/item"
 	"github.com/thechosenlan/homebox/backend/internal/data/ent/label"
 	"github.com/thechosenlan/homebox/backend/internal/data/ent/location"
+	"github.com/thechosenlan/homebox/backend/internal/data/ent/notifier"
 	"github.com/thechosenlan/homebox/backend/internal/data/ent/user"
 )
 
@@ -179,6 +180,21 @@ func (gc *GroupCreate) AddInvitationTokens(g ...*GroupInvitationToken) *GroupCre
 	return gc.AddInvitationTokenIDs(ids...)
 }
 
+// AddNotifierIDs adds the "notifiers" edge to the Notifier entity by IDs.
+func (gc *GroupCreate) AddNotifierIDs(ids ...uuid.UUID) *GroupCreate {
+	gc.mutation.AddNotifierIDs(ids...)
+	return gc
+}
+
+// AddNotifiers adds the "notifiers" edges to the Notifier entity.
+func (gc *GroupCreate) AddNotifiers(n ...*Notifier) *GroupCreate {
+	ids := make([]uuid.UUID, len(n))
+	for i := range n {
+		ids[i] = n[i].ID
+	}
+	return gc.AddNotifierIDs(ids...)
+}
+
 // Mutation returns the GroupMutation object of the builder.
 func (gc *GroupCreate) Mutation() *GroupMutation {
 	return gc.mutation
@@ -285,13 +301,7 @@ func (gc *GroupCreate) sqlSave(ctx context.Context) (*Group, error) {
 func (gc *GroupCreate) createSpec() (*Group, *sqlgraph.CreateSpec) {
 	var (
 		_node = &Group{config: gc.config}
-		_spec = &sqlgraph.CreateSpec{
-			Table: group.Table,
-			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeUUID,
-				Column: group.FieldID,
-			},
-		}
+		_spec = sqlgraph.NewCreateSpec(group.Table, sqlgraph.NewFieldSpec(group.FieldID, field.TypeUUID))
 	)
 	if id, ok := gc.mutation.ID(); ok {
 		_node.ID = id
@@ -321,10 +331,7 @@ func (gc *GroupCreate) createSpec() (*Group, *sqlgraph.CreateSpec) {
 			Columns: []string{group.UsersColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: user.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -340,10 +347,7 @@ func (gc *GroupCreate) createSpec() (*Group, *sqlgraph.CreateSpec) {
 			Columns: []string{group.LocationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: location.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(location.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -359,10 +363,7 @@ func (gc *GroupCreate) createSpec() (*Group, *sqlgraph.CreateSpec) {
 			Columns: []string{group.ItemsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: item.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(item.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -378,10 +379,7 @@ func (gc *GroupCreate) createSpec() (*Group, *sqlgraph.CreateSpec) {
 			Columns: []string{group.LabelsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: label.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(label.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -397,10 +395,7 @@ func (gc *GroupCreate) createSpec() (*Group, *sqlgraph.CreateSpec) {
 			Columns: []string{group.DocumentsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: document.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(document.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -416,10 +411,23 @@ func (gc *GroupCreate) createSpec() (*Group, *sqlgraph.CreateSpec) {
 			Columns: []string{group.InvitationTokensColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: groupinvitationtoken.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(groupinvitationtoken.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := gc.mutation.NotifiersIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   group.NotifiersTable,
+			Columns: []string{group.NotifiersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(notifier.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

@@ -22,6 +22,7 @@ import (
 	"github.com/thechosenlan/homebox/backend/internal/data/ent/label"
 	"github.com/thechosenlan/homebox/backend/internal/data/ent/location"
 	"github.com/thechosenlan/homebox/backend/internal/data/ent/maintenanceentry"
+	"github.com/thechosenlan/homebox/backend/internal/data/ent/notifier"
 	"github.com/thechosenlan/homebox/backend/internal/data/ent/user"
 )
 
@@ -31,6 +32,7 @@ type (
 	Hook          = ent.Hook
 	Value         = ent.Value
 	Query         = ent.Query
+	QueryContext  = ent.QueryContext
 	Querier       = ent.Querier
 	QuerierFunc   = ent.QuerierFunc
 	Interceptor   = ent.Interceptor
@@ -42,6 +44,32 @@ type (
 	Mutation      = ent.Mutation
 	MutateFunc    = ent.MutateFunc
 )
+
+type clientCtxKey struct{}
+
+// FromContext returns a Client stored inside a context, or nil if there isn't one.
+func FromContext(ctx context.Context) *Client {
+	c, _ := ctx.Value(clientCtxKey{}).(*Client)
+	return c
+}
+
+// NewContext returns a new context with the given Client attached.
+func NewContext(parent context.Context, c *Client) context.Context {
+	return context.WithValue(parent, clientCtxKey{}, c)
+}
+
+type txCtxKey struct{}
+
+// TxFromContext returns a Tx stored inside a context, or nil if there isn't one.
+func TxFromContext(ctx context.Context) *Tx {
+	tx, _ := ctx.Value(txCtxKey{}).(*Tx)
+	return tx
+}
+
+// NewTxContext returns a new context with the given Tx attached.
+func NewTxContext(parent context.Context, tx *Tx) context.Context {
+	return context.WithValue(parent, txCtxKey{}, tx)
+}
 
 // OrderFunc applies an ordering on the sql selector.
 type OrderFunc func(*sql.Selector)
@@ -60,6 +88,7 @@ func columnChecker(table string) func(string) error {
 		label.Table:                label.ValidColumn,
 		location.Table:             location.ValidColumn,
 		maintenanceentry.Table:     maintenanceentry.ValidColumn,
+		notifier.Table:             notifier.ValidColumn,
 		user.Table:                 user.ValidColumn,
 	}
 	check, ok := checks[table]
@@ -500,7 +529,7 @@ func withHooks[V Value, M any, PM interface {
 		return exec(ctx)
 	}
 	var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
-		mutationT, ok := m.(PM)
+		mutationT, ok := any(m).(PM)
 		if !ok {
 			return nil, fmt.Errorf("unexpected mutation type %T", m)
 		}
@@ -525,10 +554,11 @@ func withHooks[V Value, M any, PM interface {
 	return nv, nil
 }
 
-// newQueryContext returns a new context with the given QueryContext attached in case it does not exist.
-func newQueryContext(ctx context.Context, typ, op string) context.Context {
+// setContextOp returns a new context with the given QueryContext attached (including its op) in case it does not exist.
+func setContextOp(ctx context.Context, qc *QueryContext, op string) context.Context {
 	if ent.QueryFromContext(ctx) == nil {
-		ctx = ent.NewQueryContext(ctx, &ent.QueryContext{Type: typ, Op: op})
+		qc.Op = op
+		ctx = ent.NewQueryContext(ctx, qc)
 	}
 	return ctx
 }

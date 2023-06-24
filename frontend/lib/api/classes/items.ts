@@ -4,6 +4,7 @@ import {
   ItemAttachmentUpdate,
   ItemCreate,
   ItemOut,
+  ItemPatch,
   ItemSummary,
   ItemUpdate,
   MaintenanceEntry,
@@ -15,12 +16,14 @@ import { AttachmentTypes, PaginationResult } from "../types/non-generated";
 import { Requests } from "~~/lib/requests";
 
 export type ItemsQuery = {
+  orderBy?: string;
   includeArchived?: boolean;
   page?: number;
   pageSize?: number;
   locations?: string[];
   labels?: string[];
   q?: string;
+  fields?: string[];
 };
 
 export class AttachmentsAPI extends BaseAPI {
@@ -48,9 +51,24 @@ export class AttachmentsAPI extends BaseAPI {
   }
 }
 
+export class FieldsAPI extends BaseAPI {
+  getAll() {
+    return this.http.get<string[]>({ url: route("/items/fields") });
+  }
+
+  getAllValues(field: string) {
+    return this.http.get<string[]>({ url: route(`/items/fields/values`, { field }) });
+  }
+}
+
+type MaintenanceEntryQuery = {
+  scheduled?: boolean;
+  completed?: boolean;
+};
+
 export class MaintenanceAPI extends BaseAPI {
-  getLog(itemId: string) {
-    return this.http.get<MaintenanceLog>({ url: route(`/items/${itemId}/maintenance`) });
+  getLog(itemId: string, q: MaintenanceEntryQuery = {}) {
+    return this.http.get<MaintenanceLog>({ url: route(`/items/${itemId}/maintenance`, q) });
   }
 
   create(itemId: string, data: MaintenanceEntryCreate) {
@@ -75,9 +93,11 @@ export class MaintenanceAPI extends BaseAPI {
 export class ItemsApi extends BaseAPI {
   attachments: AttachmentsAPI;
   maintenance: MaintenanceAPI;
+  fields: FieldsAPI;
 
   constructor(http: Requests, token: string) {
     super(http, token);
+    this.fields = new FieldsAPI(http);
     this.attachments = new AttachmentsAPI(http);
     this.maintenance = new MaintenanceAPI(http);
   }
@@ -119,6 +139,20 @@ export class ItemsApi extends BaseAPI {
     return payload;
   }
 
+  async patch(id: string, item: ItemPatch) {
+    const resp = await this.http.patch<ItemPatch, ItemOut>({
+      url: route(`/items/${id}`),
+      body: this.dropFields(item),
+    });
+
+    if (!resp.data) {
+      return resp;
+    }
+
+    resp.data = parseDate(resp.data, ["purchaseTime", "soldTime", "warrantyExpires"]);
+    return resp;
+  }
+
   import(file: File | Blob) {
     const formData = new FormData();
     formData.append("csv", file);
@@ -127,5 +161,9 @@ export class ItemsApi extends BaseAPI {
       url: route("/items/import"),
       data: formData,
     });
+  }
+
+  exportURL() {
+    return route("/items/export");
   }
 }

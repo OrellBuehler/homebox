@@ -219,13 +219,7 @@ func (atc *AuthTokensCreate) sqlSave(ctx context.Context) (*AuthTokens, error) {
 func (atc *AuthTokensCreate) createSpec() (*AuthTokens, *sqlgraph.CreateSpec) {
 	var (
 		_node = &AuthTokens{config: atc.config}
-		_spec = &sqlgraph.CreateSpec{
-			Table: authtokens.Table,
-			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeUUID,
-				Column: authtokens.FieldID,
-			},
-		}
+		_spec = sqlgraph.NewCreateSpec(authtokens.Table, sqlgraph.NewFieldSpec(authtokens.FieldID, field.TypeUUID))
 	)
 	if id, ok := atc.mutation.ID(); ok {
 		_node.ID = id
@@ -255,10 +249,7 @@ func (atc *AuthTokensCreate) createSpec() (*AuthTokens, *sqlgraph.CreateSpec) {
 			Columns: []string{authtokens.UserColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: user.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -275,10 +266,7 @@ func (atc *AuthTokensCreate) createSpec() (*AuthTokens, *sqlgraph.CreateSpec) {
 			Columns: []string{authtokens.RolesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeInt,
-					Column: authroles.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(authroles.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

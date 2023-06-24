@@ -22,7 +22,7 @@ COPY ./backend .
 RUN go get -d -v ./...
 RUN rm -rf ./app/api/public
 COPY --from=frontend-builder /app/.output/public ./app/api/static/public
-RUN CGO_ENABLED=1 GOOS=linux go build \
+RUN CGO_ENABLED=0 GOOS=linux go build \
     -ldflags "-s -w -X main.commit=$COMMIT -X main.buildTime=$BUILD_TIME -X main.version=$VERSION"  \
     -o /go/bin/api \
     -v ./app/api/*.go
@@ -41,6 +41,7 @@ COPY --from=builder /go/bin/api /app
 RUN chmod +x /app/api
 
 LABEL Name=homebox Version=0.0.1
+LABEL org.opencontainers.image.source="https://github.com/hay-kot/homebox"
 EXPOSE 7745
 WORKDIR /app
 VOLUME [ "/data" ]

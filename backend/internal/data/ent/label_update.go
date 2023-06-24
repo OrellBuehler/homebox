@@ -204,16 +204,7 @@ func (lu *LabelUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if err := lu.check(); err != nil {
 		return n, err
 	}
-	_spec := &sqlgraph.UpdateSpec{
-		Node: &sqlgraph.NodeSpec{
-			Table:   label.Table,
-			Columns: label.Columns,
-			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeUUID,
-				Column: label.FieldID,
-			},
-		},
-	}
+	_spec := sqlgraph.NewUpdateSpec(label.Table, label.Columns, sqlgraph.NewFieldSpec(label.FieldID, field.TypeUUID))
 	if ps := lu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -247,10 +238,7 @@ func (lu *LabelUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{label.GroupColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: group.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(group.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -263,10 +251,7 @@ func (lu *LabelUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{label.GroupColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: group.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(group.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -282,10 +267,7 @@ func (lu *LabelUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: label.ItemsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: item.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(item.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -298,10 +280,7 @@ func (lu *LabelUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: label.ItemsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: item.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(item.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -317,10 +296,7 @@ func (lu *LabelUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: label.ItemsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: item.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(item.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -458,6 +434,12 @@ func (luo *LabelUpdateOne) RemoveItems(i ...*Item) *LabelUpdateOne {
 	return luo.RemoveItemIDs(ids...)
 }
 
+// Where appends a list predicates to the LabelUpdate builder.
+func (luo *LabelUpdateOne) Where(ps ...predicate.Label) *LabelUpdateOne {
+	luo.mutation.Where(ps...)
+	return luo
+}
+
 // Select allows selecting one or more fields (columns) of the returned entity.
 // The default is selecting all fields defined in the entity schema.
 func (luo *LabelUpdateOne) Select(field string, fields ...string) *LabelUpdateOne {
@@ -528,16 +510,7 @@ func (luo *LabelUpdateOne) sqlSave(ctx context.Context) (_node *Label, err error
 	if err := luo.check(); err != nil {
 		return _node, err
 	}
-	_spec := &sqlgraph.UpdateSpec{
-		Node: &sqlgraph.NodeSpec{
-			Table:   label.Table,
-			Columns: label.Columns,
-			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeUUID,
-				Column: label.FieldID,
-			},
-		},
-	}
+	_spec := sqlgraph.NewUpdateSpec(label.Table, label.Columns, sqlgraph.NewFieldSpec(label.FieldID, field.TypeUUID))
 	id, ok := luo.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "Label.id" for update`)}
@@ -588,10 +561,7 @@ func (luo *LabelUpdateOne) sqlSave(ctx context.Context) (_node *Label, err error
 			Columns: []string{label.GroupColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: group.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(group.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -604,10 +574,7 @@ func (luo *LabelUpdateOne) sqlSave(ctx context.Context) (_node *Label, err error
 			Columns: []string{label.GroupColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: group.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(group.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -623,10 +590,7 @@ func (luo *LabelUpdateOne) sqlSave(ctx context.Context) (_node *Label, err error
 			Columns: label.ItemsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: item.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(item.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -639,10 +603,7 @@ func (luo *LabelUpdateOne) sqlSave(ctx context.Context) (_node *Label, err error
 			Columns: label.ItemsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: item.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(item.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -658,10 +619,7 @@ func (luo *LabelUpdateOne) sqlSave(ctx context.Context) (_node *Label, err error
 			Columns: label.ItemsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: item.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(item.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

@@ -75,12 +75,12 @@ type Item struct {
 
 // ItemEdges holds the relations/edges for other nodes in the graph.
 type ItemEdges struct {
+	// Group holds the value of the group edge.
+	Group *Group `json:"group,omitempty"`
 	// Parent holds the value of the parent edge.
 	Parent *Item `json:"parent,omitempty"`
 	// Children holds the value of the children edge.
 	Children []*Item `json:"children,omitempty"`
-	// Group holds the value of the group edge.
-	Group *Group `json:"group,omitempty"`
 	// Label holds the value of the label edge.
 	Label []*Label `json:"label,omitempty"`
 	// Location holds the value of the location edge.
@@ -96,10 +96,23 @@ type ItemEdges struct {
 	loadedTypes [8]bool
 }
 
+// GroupOrErr returns the Group value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e ItemEdges) GroupOrErr() (*Group, error) {
+	if e.loadedTypes[0] {
+		if e.Group == nil {
+			// Edge was loaded but was not found.
+			return nil, &NotFoundError{label: group.Label}
+		}
+		return e.Group, nil
+	}
+	return nil, &NotLoadedError{edge: "group"}
+}
+
 // ParentOrErr returns the Parent value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
 func (e ItemEdges) ParentOrErr() (*Item, error) {
-	if e.loadedTypes[0] {
+	if e.loadedTypes[1] {
 		if e.Parent == nil {
 			// Edge was loaded but was not found.
 			return nil, &NotFoundError{label: item.Label}
@@ -112,23 +125,10 @@ func (e ItemEdges) ParentOrErr() (*Item, error) {
 // ChildrenOrErr returns the Children value or an error if the edge
 // was not loaded in eager-loading.
 func (e ItemEdges) ChildrenOrErr() ([]*Item, error) {
-	if e.loadedTypes[1] {
+	if e.loadedTypes[2] {
 		return e.Children, nil
 	}
 	return nil, &NotLoadedError{edge: "children"}
-}
-
-// GroupOrErr returns the Group value or an error if the edge
-// was not loaded in eager-loading, or loaded but was not found.
-func (e ItemEdges) GroupOrErr() (*Group, error) {
-	if e.loadedTypes[2] {
-		if e.Group == nil {
-			// Edge was loaded but was not found.
-			return nil, &NotFoundError{label: group.Label}
-		}
-		return e.Group, nil
-	}
-	return nil, &NotLoadedError{edge: "group"}
 }
 
 // LabelOrErr returns the Label value or an error if the edge
@@ -388,51 +388,51 @@ func (i *Item) assignValues(columns []string, values []any) error {
 	return nil
 }
 
+// QueryGroup queries the "group" edge of the Item entity.
+func (i *Item) QueryGroup() *GroupQuery {
+	return NewItemClient(i.config).QueryGroup(i)
+}
+
 // QueryParent queries the "parent" edge of the Item entity.
 func (i *Item) QueryParent() *ItemQuery {
-	return (&ItemClient{config: i.config}).QueryParent(i)
+	return NewItemClient(i.config).QueryParent(i)
 }
 
 // QueryChildren queries the "children" edge of the Item entity.
 func (i *Item) QueryChildren() *ItemQuery {
-	return (&ItemClient{config: i.config}).QueryChildren(i)
-}
-
-// QueryGroup queries the "group" edge of the Item entity.
-func (i *Item) QueryGroup() *GroupQuery {
-	return (&ItemClient{config: i.config}).QueryGroup(i)
+	return NewItemClient(i.config).QueryChildren(i)
 }
 
 // QueryLabel queries the "label" edge of the Item entity.
 func (i *Item) QueryLabel() *LabelQuery {
-	return (&ItemClient{config: i.config}).QueryLabel(i)
+	return NewItemClient(i.config).QueryLabel(i)
 }
 
 // QueryLocation queries the "location" edge of the Item entity.
 func (i *Item) QueryLocation() *LocationQuery {
-	return (&ItemClient{config: i.config}).QueryLocation(i)
+	return NewItemClient(i.config).QueryLocation(i)
 }
 
 // QueryFields queries the "fields" edge of the Item entity.
 func (i *Item) QueryFields() *ItemFieldQuery {
-	return (&ItemClient{config: i.config}).QueryFields(i)
+	return NewItemClient(i.config).QueryFields(i)
 }
 
 // QueryMaintenanceEntries queries the "maintenance_entries" edge of the Item entity.
 func (i *Item) QueryMaintenanceEntries() *MaintenanceEntryQuery {
-	return (&ItemClient{config: i.config}).QueryMaintenanceEntries(i)
+	return NewItemClient(i.config).QueryMaintenanceEntries(i)
 }
 
 // QueryAttachments queries the "attachments" edge of the Item entity.
 func (i *Item) QueryAttachments() *AttachmentQuery {
-	return (&ItemClient{config: i.config}).QueryAttachments(i)
+	return NewItemClient(i.config).QueryAttachments(i)
 }
 
 // Update returns a builder for updating this Item.
 // Note that you need to call Item.Unwrap() before calling this method if this Item
 // was returned from a transaction, and the transaction was committed or rolled back.
 func (i *Item) Update() *ItemUpdateOne {
-	return (&ItemClient{config: i.config}).UpdateOne(i)
+	return NewItemClient(i.config).UpdateOne(i)
 }
 
 // Unwrap unwraps the Item entity that was returned from a transaction after it was closed,
@@ -525,9 +525,3 @@ func (i *Item) String() string {
 
 // Items is a parsable slice of Item.
 type Items []*Item
-
-func (i Items) config(cfg config) {
-	for _i := range i {
-		i[_i].config = cfg
-	}
-}

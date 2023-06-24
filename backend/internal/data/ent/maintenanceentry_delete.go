@@ -40,15 +40,7 @@ func (med *MaintenanceEntryDelete) ExecX(ctx context.Context) int {
 }
 
 func (med *MaintenanceEntryDelete) sqlExec(ctx context.Context) (int, error) {
-	_spec := &sqlgraph.DeleteSpec{
-		Node: &sqlgraph.NodeSpec{
-			Table: maintenanceentry.Table,
-			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeUUID,
-				Column: maintenanceentry.FieldID,
-			},
-		},
-	}
+	_spec := sqlgraph.NewDeleteSpec(maintenanceentry.Table, sqlgraph.NewFieldSpec(maintenanceentry.FieldID, field.TypeUUID))
 	if ps := med.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -69,6 +61,12 @@ type MaintenanceEntryDeleteOne struct {
 	med *MaintenanceEntryDelete
 }
 
+// Where appends a list predicates to the MaintenanceEntryDelete builder.
+func (medo *MaintenanceEntryDeleteOne) Where(ps ...predicate.MaintenanceEntry) *MaintenanceEntryDeleteOne {
+	medo.med.mutation.Where(ps...)
+	return medo
+}
+
 // Exec executes the deletion query.
 func (medo *MaintenanceEntryDeleteOne) Exec(ctx context.Context) error {
 	n, err := medo.med.Exec(ctx)
@@ -84,5 +82,7 @@ func (medo *MaintenanceEntryDeleteOne) Exec(ctx context.Context) error {
 
 // ExecX is like Exec, but panics if an error occurs.
 func (medo *MaintenanceEntryDeleteOne) ExecX(ctx context.Context) {
-	medo.med.ExecX(ctx)
+	if err := medo.Exec(ctx); err != nil {
+		panic(err)
+	}
 }
